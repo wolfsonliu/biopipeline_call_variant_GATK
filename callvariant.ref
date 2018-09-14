@@ -1,0 +1,41 @@
+# reference
+home=$HOME
+
+# the absolute path for bwa index directory
+bwaindexdir=$home/Documents/Reference/gatk/BWAIndex
+
+# the absolute path for the genome.fa
+# the genome.dict should be in the same directory with genome.fa
+genomefa=$home/Documents/Reference/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa
+
+# GATK recalibration data
+
+dbsnp=/home/wolfson/Documents/Reference/gatk/dbsnp/dbsnp_146.hg38.vcf.gz
+g1000=/home/wolfson/Documents/Reference/gatk/g1000/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+hapmap=/home/wolfson/Documents/Reference/gatk/hapmap/hapmap_3.3.hg38.vcf.gz
+omni=/home/wolfson/Documents/Reference/gatk/omni/1000G_omni2.5.hg38.vcf.gz
+
+clinvarfile=/home/wolfson/Documents/Reference/clinvar/clinvar.vcf.gz
+
+ANNOVARdir=$home/Documents/Reference/humandb
+
+####################
+# software
+# Please set the path for softwares before use.
+####################
+
+Fastqc=fastqc
+
+Bwa=bwa
+
+Samtools=samtools
+
+Picard="java -jar $home/.local/env/bioinformatics/bin/picard.jar"
+
+Gatk=$home/Documents/Software/gatk4/gatk
+
+Annotate_variation=annotate_variation.pl
+
+Table_annovar=table_annovar.pl
+
+################################################################################
