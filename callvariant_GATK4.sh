@@ -41,6 +41,14 @@ while getopts "hr:f:d:l:t:" opt; do
     esac
 done
 
+if [ -L $0 ] ; then
+    DIR=$(dirname $(readlink -f $0))
+else
+    DIR=$(dirname $0)
+fi
+
+
+
 shift $((OPTIND-1))
 
 outdir=${outputdir}
@@ -50,7 +58,7 @@ outprefix=${outdir}/${outlabel}
 # read reference file path
 source $referencefile
 
-
+echo $PATH
 ################################################################################
 
 
@@ -197,7 +205,7 @@ rm -f ${outdir}/vcf/${outlabel}.filter0.vcf.gz.tbi
 
 echo "[$(date)] < Start >  ANNOVAR table_annovar.pl: "${outdir}/vcf/${outlabel}.filter.vcf
 $Table_annovar --buildver hg38 \
-               --remove --protocol refGene,clinvar_20180603,exac03,avsnp147,dbnsfp30a \
+               --remove --protocol refGene,clinvar_20160302,exac03,avsnp147,dbnsfp30a \
                --operation g,f,f,f,f -nastring . --polish --vcfinput \
                --out ${outdir}/vcf/${outlabel} \
                ${outdir}/vcf/${outlabel}.filter.vcf ${ANNOVARdir}
@@ -214,14 +222,15 @@ echo "[$(date)] Annotated VCF: " ${outdir}/${outlabel}.anno.vcf
 #    output: markdup.sorted.bam.stats
 ####################
 
-$bcftools stats ${outdir}/vcf/${outlabel}.filter.vcf > ${outdir}/log/${outlabel}.filter.vcf.stats
+$Bcftools stats ${outdir}/vcf/${outlabel}.filter.vcf > ${outdir}/log/${outlabel}.filter.vcf.stats
 
 
 ####################
 # Generate report
 ####################
 
-bash ./makereport.sh -l ${outlabel} -p ./pipeline.png \
+
+$Makereport -l ${outlabel} -p ${pipelinedir}/pipeline.png \
      -q ${outdir}/log/$(basename ${inputfq%[.]*})_fastqc.zip \
      -s ${outdir}/log/${outlabel}.sorted.markdup.bam.stats \
      -v ${outdir}/log/${outlabel}.filter.vcf.stats \

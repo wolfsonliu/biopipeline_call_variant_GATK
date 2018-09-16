@@ -1,4 +1,6 @@
-tex = '\n'.join([
+#! /usr/bin/env python3
+
+tex = "\n".join([
     "\\documentclass[10pt,oneside,a4paper]{{article}}",
     "\\usepackage{{textcomp}}",
     "\\usepackage{{graphicx}}",
@@ -284,6 +286,7 @@ tex = '\n'.join([
     "\\end{{document}}"
 ])
 
+
 import os
 import argparse
 parser = argparse.ArgumentParser(description='Generate Report TeX file.')
@@ -365,50 +368,4 @@ resulttex = tex.format(**argdict)
 with open(argdict['output'], 'w') as f:
     f.write(resulttex)
 
-
-    # report_title = 's49 Exome Variant Analysis Report',
-    # report_author = 'MS Health Care',
-    # sum_total_seq = 0,
-    # sum_mapping_rate = 0,
-    # sum_refgenome = 'GRCh38',
-    # sum_variants_number = 0,
-    # sum_snp_number = 0,
-    # sum_indel_number = 0,
-    # qc_seq_mode = 'Single End',
-    # qc_total_seq = 0,
-    # qc_total_pair = 0,
-    # qc_seq_length_mean = 0,
-    # qc_seq_length_min = 0,
-    # qc_seq_length_median = 0,
-    # qc_seq_length_max = 0,
-    # qc_seq_length_q1 = 0,
-    # qc_seq_length_q3 = 0,
-    # qc_seq_gc_mean = 0,
-    # qc_seq_gc_min = 0,
-    # qc_seq_gc_median = 0,
-    # qc_seq_gc_max = 0,
-    # qc_seq_gc_q1 = 0,
-    # qc_seq_gc_q3 = 0,
-    # map_maptool = 'BWA MEM',
-    # map_maptool_v = '0.7.17',
-    # map_refgenome = 'GRCh38',
-    # map_refgenome_v = 'UCSC hg38',
-    # map_samtool = 'samtools',
-    # map_samtool_v = '1.7',
-    # map_mkdup = 'Picard',
-    # map_mkdup_v = '2.18.11',
-    # map_total_seq = 0,
-    # map_mapped_seq = 0,
-    # map_unmapped_seq = 0,
-    # vc_total_variant = 0,
-    # vc_snv_number = 0,
-    # vc_indel_number = 0,
-    # figpath = 'fig/',
-    # fig_pipeline = 'pipeline.png',
-    # fig_qc_seq_length_distribution = 'qc_seq_length_distribution.png',
-    # fig_qc_base_quality_boxplot = 'qc_base_quality_boxplot.png',
-    # fig_qc_seq_quality_distribution = 'qc_seq_quality_distribution.png',
-    # fig_qc_base_content = 'qc_base_content.png',
-    # fig_qc_seq_gc = 'qc_seq_gc.png',
-    # fig_vc_snvtype = 'vc_snvtype.png',
-    # fig_vc_snvanno = 'vc_snvanno.png'
+################################################################################

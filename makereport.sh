@@ -139,6 +139,7 @@ if [ ! -e ${outputdir}/fig ]; then
     mkdir -p ${outputdir}/fig
 fi
 
+
 echo "[$(date) ] Unzip FastQC zip file"
 unzip ${qcfile} -d ${outputdir}
 
@@ -270,10 +271,11 @@ echo "total_variant:" $mkrp_total_variant | tee -a ${outputdir}/stats.txt
 echo "snp:" $mkrp_snp | tee -a ${outputdir}/stats.txt
 echo "indel:" $mkrp_indel | tee -a ${outputdir}/stats.txt
 
+
 ####################
 echo "[$(date) ] Generate report file in output directory"
 # Make report.tex
-python3 reporter.py --output ${outputdir}/report.tex \
+reporter.py --output ${outputdir}/report.tex \
        --report-title "${label} Variant Analysis Report" \
        --report-author "MS Health Care Team" \
        --sum-total-seq $mkrp_total_seq \

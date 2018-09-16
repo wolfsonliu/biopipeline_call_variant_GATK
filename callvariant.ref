@@ -1,11 +1,14 @@
-# reference
 home=$HOME
-
+pipelinedir=/home/wolfson/Documents/Project/HealthCare/pipeline/callvariant_GATK4
+PATH=${pipelinedir}:$PATH
+Makereport="bash ${pipelinedir}/makereport.sh"
+# reference
 # the absolute path for bwa index directory
 bwaindexdir=$home/Documents/Reference/gatk/BWAIndex
 
 # the absolute path for the genome.fa
 # the genome.dict should be in the same directory with genome.fa
+# 
 genomefa=$home/Documents/Reference/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa
 
 # GATK recalibration data
@@ -29,6 +32,7 @@ Fastqc=fastqc
 Bwa=bwa
 
 Samtools=samtools
+Bcftools=bcftools
 
 Picard="java -jar $home/.local/env/bioinformatics/bin/picard.jar"
 
@@ -37,5 +41,6 @@ Gatk=$home/Documents/Software/gatk4/gatk
 Annotate_variation=annotate_variation.pl
 
 Table_annovar=table_annovar.pl
+
 
 ################################################################################
