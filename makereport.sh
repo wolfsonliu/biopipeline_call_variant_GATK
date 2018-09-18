@@ -1,36 +1,38 @@
 #! /bin/bash
+set -eu
+
 function usage {
     echo "Usage: $0 -l label -p pipeline.png -q qc.zip -s samtools_stats.txt -v bcftools_stats.txt -f input.fastq -d outdir" 1>&2
 }
 
 
 while getopts "hl:p:q:s:v:f:d:" opt; do
-    case $opt in
+    case ${opt} in
         h)
             usage
             ;;
         l)
-            label=$OPTARG
+            OPT_LABEL=${OPTARG}
             ;;
         p)
-            figpipeline=$OPTARG
+            OPT_FIGPIPELINE=${OPTARG}
             ;;
         q)
-            qcfile=$OPTARG
+            OPT_QCFILE=${OPTARG}
             ;;
         s)
-            sstatfile=$OPTARG
+            OPT_SSTATFILE=${OPTARG}
             ;;
         v)
-            vstatfile=$OPTARG
+            OPT_VSTATFILE=${OPTARG}
             ;;
         f)
             # input fastq file
-            inputfq=$OPTARG
+            OPT_INPUTFQ=${OPTARG}
             ;;
         d)
             # output directory
-            outputdir=$OPTARG
+            OPT_OUTDIR=${OPTARG}
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
@@ -47,7 +49,7 @@ done
 
 shift $((OPTIND-1))
 
-if [ -z $label -o -z $qcfile -o -z $inputfq -o -z $sstatfile -o -z $vstatfile ]; then
+if [ -z ${OPT_LABEL} -o -z ${OPT_QCFILE} -o -z ${OPT_INPUTFQ} -o -z ${OPT_SSTATFILE} -o -z ${OPT_VSTATFILE} ]; then
    usage
    exit 1
 fi
@@ -129,176 +131,176 @@ function getblock {
 }
 
 ####################
-if [ -z $outputdir ]; then
-    outdir=$(pwd)
+if [ -z ${OPT_OUTDIR} ]; then
+    OUTDIR=$(pwd)
 else
-    outdir=${outputdir}
+    OUTDIR=${OPT_OUTDIR}
 fi
 
-if [ ! -e ${outputdir}/fig ]; then
-    mkdir -p ${outputdir}/fig
+if [ ! -e ${OUTDIR}/fig ]; then
+    mkdir -p ${OUTDIR}/fig
 fi
 
 
 echo "[$(date) ] Unzip FastQC zip file"
-unzip ${qcfile} -d ${outputdir}
+unzip ${OPT_QCFILE} -d ${OUTDIR}
 
-qcdir=${outputdir}/$(basename ${qcfile%[.]zip})
+QCDIR=${OUTDIR}/$(basename ${OPT_QCFILE%[.]zip})
 
 ####################
 echo "[$(date) ] Copy FastQC figures to output directory"
 # get figure
-cp ${figpipeline} ${outputdir}/fig/$(basename ${figpipeline})
-cp ${qcdir}/Images/sequence_length_distribution.png ${outputdir}/fig/qc_seq_length_distribution.png
-cp ${qcdir}/Images/per_base_quality.png ${outputdir}/fig/qc_base_quality_boxplot.png
-cp ${qcdir}/Images/per_sequence_quality.png ${outputdir}/fig/qc_seq_quality_distribution.png
-cp ${qcdir}/Images/per_base_sequence_content.png ${outputdir}/fig/qc_base_content.png
-cp ${qcdir}/Images/per_sequence_gc_content.png ${outputdir}/fig/qc_seqe_gc.png
+cp ${OPT_FIGPIPELINE} ${OUTDIR}/fig/$(basename ${OPT_FIGPIPELINE})
+cp ${QCDIR}/Images/sequence_length_distribution.png ${OUTDIR}/fig/qc_seq_length_distribution.png
+cp ${QCDIR}/Images/per_base_quality.png ${OUTDIR}/fig/qc_base_quality_boxplot.png
+cp ${QCDIR}/Images/per_sequence_quality.png ${OUTDIR}/fig/qc_seq_quality_distribution.png
+cp ${QCDIR}/Images/per_base_sequence_content.png ${OUTDIR}/fig/qc_base_content.png
+cp ${QCDIR}/Images/per_sequence_gc_content.png ${OUTDIR}/fig/qc_seqe_gc.png
 
 ####################
 echo "[$(date) ] Fetch FastQC data to output directory"
 # get data
-getblock ">>Per base sequence quality" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_base_quality.txt
-getblock ">>Per sequence quality scores" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_seq_quality_distribution.txt
-getblock ">>Per base sequence content" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_base_content.txt
-getblock ">>Per sequence GC content" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_seq_gc.txt
-getblock ">>Per base N content" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_base_n.txt
-getblock ">>Sequence Length Distribution" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_seq_length_distribution.txt
-getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_seq_duplication.txt
-getblock ">>Overrepresented sequences" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_seq_overrepresented.txt
-getblock ">>Adapter Content" ">>END_MODULE" ${qcdir}/fastqc_data.txt > ${outputdir}/qc_adapter.txt
+getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_base_quality.txt
+getblock ">>Per sequence quality scores" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_seq_quality_distribution.txt
+getblock ">>Per base sequence content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_base_content.txt
+getblock ">>Per sequence GC content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_seq_gc.txt
+getblock ">>Per base N content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_base_n.txt
+getblock ">>Sequence Length Distribution" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_seq_length_distribution.txt
+getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_seq_duplication.txt
+getblock ">>Overrepresented sequences" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_seq_overrepresented.txt
+getblock ">>Adapter Content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_adapter.txt
 
 ####################
 echo "[$(date) ] Fetch FastQC data to output directory"
 # get justification
-echo "base_quality:" $(grep ">>Per base sequence quality" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "seq_quality:" $(grep ">>Per sequence quality scores" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "base_content:" $(grep ">>Per base sequence content" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "seq_gc:" $(grep ">>Per sequence GC content" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "base_n:" $(grep ">>Per base N content" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${qcdir}/fastqc_data.txt | cut -f2) | tee -a ${outputdir}/stats.txt
-echo "adapter:" $(grep ">>Adapter Content" ${qcdir}/fastqc_data.txt | cut -f2)
+echo "base_quality:" $(grep ">>Per base sequence quality" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "seq_quality:" $(grep ">>Per sequence quality scores" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "base_content:" $(grep ">>Per base sequence content" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc:" $(grep ">>Per sequence GC content" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "base_n:" $(grep ">>Per base N content" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUTDIR}/stats.txt
+echo "adapter:" $(grep ">>Adapter Content" ${QCDIR}/fastqc_data.txt | cut -f2)
 
 ####################
 echo "[$(date) ] Fetch SAM statistics data to output directory"
 # get samstats
-cat ${sstatfile} | grep ^SN | cut -f 2- >> ${outputdir}/sam_summary_number.txt
-echo -e "gc\tcount" > ${outputdir}/sam_GC_first.txt
-cat ${sstatfile} | grep ^GCF | cut -f 2- >> ${outputdir}/sam_GC_first.txt
-echo -e "gc\tcount" > ${outputdir}/sam_GC_last.txt
-cat ${sstatfile} | grep ^GCL | cut -f 2- >> ${outputdir}/sam_GC_last.txt
-echo -e "cycle\tA\tC\tG\tT\tN\t0" > ${outputdir}/sam_ACGT.txt
-cat ${sstatfile} | grep ^GCC | cut -f 2- >> ${outputdir}/sam_ACGT.txt
-echo -e "cycle\tA\tC\tG\tT\tN\t0" > ${outputdir}/sam_ACGT_first.txt
-cat ${sstatfile} | grep ^FBC | cut -f 2- >> ${outputdir}/sam_ACGT_first.txt
-echo -e "cycle\tA\tC\tG\tT\tN\t0" > ${outputdir}/sam_ACGT_last.txt
-cat ${sstatfile} | grep ^LBC | cut -f 2- >> ${outputdir}/sam_ACGT_last.txt
-echo -e "read_length\tcount" > ${outputdir}/sam_read_length.txt
-cat ${sstatfile} | grep ^RL | cut -f 2- >> ${outputdir}/sam_read_length.txt
-echo -e "read_length\tcount" > ${outputdir}/sam_read_length_first.txt
-cat ${sstatfile} | grep ^FRL | cut -f 2- >> ${outputdir}/sam_read_length_first.txt
-echo -e "read_length\tcount" > ${outputdir}/sam_read_length_last.txt
-cat ${sstatfile} | grep ^LRL | cut -f 2- >> ${outputdir}/sam_read_length_last.txt
-echo -e "length\tinsertion\tdeletion" > ${outputdir}/sam_indel.txt
-cat ${sstatfile} | grep ^ID | cut -f 2- >> ${outputdir}/sam_indel.txt
-echo -e "cycle\tinsertion_fwd\tinsertion_rev\tdeletion_fwd\tdelection_rev" > ${outputdir}/sam_cycle_indel.txt
-cat ${sstatfile} | grep ^IC | cut -f 2- >> ${outputdir}/sam_cycle_indel.txt
-cat ${sstatfile} | grep ^COV | cut -f 2- >> ${outputdir}/sam_coverage_distribution.txt
+cat ${OPT_SSTATFILE} | grep ^SN | cut -f 2- >> ${OUTDIR}/sam_summary_number.txt
+echo -e "gc\tcount" > ${OUTDIR}/sam_GC_first.txt
+cat ${OPT_SSTATFILE} | grep ^GCF | cut -f 2- >> ${OUTDIR}/sam_GC_first.txt
+echo -e "gc\tcount" > ${OUTDIR}/sam_GC_last.txt
+cat ${OPT_SSTATFILE} | grep ^GCL | cut -f 2- >> ${OUTDIR}/sam_GC_last.txt
+echo -e "cycle\tA\tC\tG\tT\tN\t0" > ${OUTDIR}/sam_ACGT.txt
+cat ${OPT_SSTATFILE} | grep ^GCC | cut -f 2- >> ${OUTDIR}/sam_ACGT.txt
+echo -e "cycle\tA\tC\tG\tT\tN\t0" > ${OUTDIR}/sam_ACGT_first.txt
+cat ${OPT_SSTATFILE} | grep ^FBC | cut -f 2- >> ${OUTDIR}/sam_ACGT_first.txt
+echo -e "cycle\tA\tC\tG\tT\tN\t0" > ${OUTDIR}/sam_ACGT_last.txt
+cat ${OPT_SSTATFILE} | grep ^LBC | cut -f 2- >> ${OUTDIR}/sam_ACGT_last.txt
+echo -e "read_length\tcount" > ${OUTDIR}/sam_read_length.txt
+cat ${OPT_SSTATFILE} | grep ^RL | cut -f 2- >> ${OUTDIR}/sam_read_length.txt
+echo -e "read_length\tcount" > ${OUTDIR}/sam_read_length_first.txt
+cat ${OPT_SSTATFILE} | grep ^FRL | cut -f 2- >> ${OUTDIR}/sam_read_length_first.txt
+echo -e "read_length\tcount" > ${OUTDIR}/sam_read_length_last.txt
+cat ${OPT_SSTATFILE} | grep ^LRL | cut -f 2- >> ${OUTDIR}/sam_read_length_last.txt
+echo -e "length\tinsertion\tdeletion" > ${OUTDIR}/sam_indel.txt
+cat ${OPT_SSTATFILE} | grep ^ID | cut -f 2- >> ${OUTDIR}/sam_indel.txt
+echo -e "cycle\tinsertion_fwd\tinsertion_rev\tdeletion_fwd\tdelection_rev" > ${OUTDIR}/sam_cycle_indel.txt
+cat ${OPT_SSTATFILE} | grep ^IC | cut -f 2- >> ${OUTDIR}/sam_cycle_indel.txt
+cat ${OPT_SSTATFILE} | grep ^COV | cut -f 2- >> ${OUTDIR}/sam_coverage_distribution.txt
 
 ####################
 echo "[$(date) ] Fetch VCF statistics data to output directory"
 # get vcfstas
-echo -e "id\tkey\tvalue" > ${outputdir}/vcf_summary_number.txt
-cat ${vstatfile} | grep ^SN | cut -f 2- >> ${outputdir}/vcf_summary_number.txt
-echo -e "id\tts\ttv\tts/tv\tts (1st ALT)\ttv (1st ALT)\tts/tv (1st ALT)" > ${outputdir}/vcf_tstv.txt
-cat ${vstatfile} | grep ^TSTV | cut -f 2- >> ${outputdir}/vcf_tstv.txt
-echo -e "id\tQuality\tnumber of SNPs\tnumber of transitions (1st ALT)\tnumber of transversions (1st ALT)\tnumber of indels" > ${outputdir}/vcf_qual.txt
-cat ${vstatfile} | grep ^QUAL | cut -f 2- >> ${outputdir}/vcf_qual.txt
-echo -e "id\tlength (deletions negative)\tcount" > ${outputdir}/vcf_indel_distribution.txt
-cat ${vstatfile} | grep ^IDD | cut -f 2- >> ${outputdir}/vcf_indel_distribution.txt
-echo -e "id\ttype\tcount" > ${outputdir}/vcf_substitution_types.txt
-cat ${vstatfile} | grep ^ST | cut -f 2- >> ${outputdir}/vcf_substitution_types.txt
-echo -e "id\tbin\tnumber of genotypes\tfraction of genotypes (%)\tnumber of sites\tfraction of sites (%)" > ${outputdir}/vcf_depth_distribution.txt
-cat ${vstatfile} | grep ^DP | cut -f 2- >> ${outputdir}/vcf_depth_distribution.txt
+echo -e "id\tkey\tvalue" > ${OUTDIR}/vcf_summary_number.txt
+cat ${OPT_VSTATFILE} | grep ^SN | cut -f 2- >> ${OUTDIR}/vcf_summary_number.txt
+echo -e "id\tts\ttv\tts/tv\tts (1st ALT)\ttv (1st ALT)\tts/tv (1st ALT)" > ${OUTDIR}/vcf_tstv.txt
+cat ${OPT_VSTATFILE} | grep ^TSTV | cut -f 2- >> ${OUTDIR}/vcf_tstv.txt
+echo -e "id\tQuality\tnumber of SNPs\tnumber of transitions (1st ALT)\tnumber of transversions (1st ALT)\tnumber of indels" > ${OUTDIR}/vcf_qual.txt
+cat ${OPT_VSTATFILE} | grep ^QUAL | cut -f 2- >> ${OUTDIR}/vcf_qual.txt
+echo -e "id\tlength (deletions negative)\tcount" > ${OUTDIR}/vcf_indel_distribution.txt
+cat ${OPT_VSTATFILE} | grep ^IDD | cut -f 2- >> ${OUTDIR}/vcf_indel_distribution.txt
+echo -e "id\ttype\tcount" > ${OUTDIR}/vcf_substitution_types.txt
+cat ${OPT_VSTATFILE} | grep ^ST | cut -f 2- >> ${OUTDIR}/vcf_substitution_types.txt
+echo -e "id\tbin\tnumber of genotypes\tfraction of genotypes (%)\tnumber of sites\tfraction of sites (%)" > ${OUTDIR}/vcf_depth_distribution.txt
+cat ${OPT_VSTATFILE} | grep ^DP | cut -f 2- >> ${OUTDIR}/vcf_depth_distribution.txt
 
 ####################
 echo "[$(date) ] Store statistics data"
-# make variable
-mkrp_total_seq=$(grep "raw total sequences:" ${outputdir}/sam_summary_number.txt | cut -f 2)
-mkrp_seq_length_mean=$(fq_seq_length_mean ${inputfq})
-mkrp_seq_length_stat=$(fq_seq_length_stat ${inputfq})
-mkrp_seq_length_min=$(echo $mkrp_seq_length_stat | cut -d"," -f 1)
-mkrp_seq_length_q1=$(echo $mkrp_seq_length_stat | cut -d"," -f 2)
-mkrp_seq_length_median=$(echo $mkrp_seq_length_stat | cut -d"," -f 3)
-mkrp_seq_length_q3=$(echo $mkrp_seq_length_stat | cut -d"," -f 4)
-mkrp_seq_length_max=$(echo $mkrp_seq_length_stat | cut -d"," -f 5)
-mkrp_seq_gc_mean=$(fq_seq_gc_mean ${inputfq})
-mkrp_seq_gc_stat=$(fq_seq_gc_stat ${inputfq})
-mkrp_seq_gc_min=$(echo $mkrp_seq_gc_stat | cut -d"," -f 1)
-mkrp_seq_gc_q1=$(echo $mkrp_seq_gc_stat | cut -d"," -f 2)
-mkrp_seq_gc_median=$(echo $mkrp_seq_gc_stat | cut -d"," -f 3)
-mkrp_seq_gc_q3=$(echo $mkrp_seq_gc_stat | cut -d"," -f 4)
-mkrp_seq_gc_max=$(echo $mkrp_seq_gc_stat | cut -d"," -f 5)
-mkrp_mapped_seq=$(grep "reads mapped:" ${outputdir}/sam_summary_number.txt | cut -f 2)
-mkrp_unmapped_seq=$(grep "reads unmapped:" ${outputdir}/sam_summary_number.txt | cut -f 2)
-mkrp_mapping_rate=0$(echo $mkrp_mapped_seq / $mkrp_total_seq | bc -l)
-mkrp_total_variant=$(grep "number of records:" ${outputdir}/vcf_summary_number.txt | cut -f 3)
-mkrp_snp=$(grep "number of SNPs:" ${outputdir}/vcf_summary_number.txt | cut -f 3)
-mkrp_indel=$(grep "number of indels:" ${outputdir}/vcf_summary_number.txt | cut -f 3)
+# make variablen
+MKRP_TOTAL_SEQ=$(grep "raw total sequences:" ${OUTDIR}/sam_summary_number.txt | cut -f 2)
+MKRP_SEQ_LENGTH_MEAN=$(fq_seq_length_mean ${OPT_INPUTFQ})
+MKRP_SEQ_LENGTH_STAT=$(fq_seq_length_stat ${OPT_INPUTFQ})
+MKRP_SEQ_LENGTH_MIN=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 1)
+MKRP_SEQ_LENGTH_Q1=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 2)
+MKRP_SEQ_LENGTH_MEDIAN=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 3)
+MKRP_SEQ_LENGTH_Q3=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 4)
+MKRP_SEQ_LENGTH_MAX=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 5)
+MKRP_SEQ_GC_MEAN=$(fq_seq_gc_mean ${OPT_INPUTFQ})
+MKRP_SEQ_GC_STAT=$(fq_seq_gc_stat ${OPT_INPUTFQ})
+MKRP_SEQ_GC_MIN=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 1)
+MKRP_SEQ_GC_Q1=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 2)
+MKRP_SEQ_GC_MEDIAN=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 3)
+MKRP_SEQ_GC_Q3=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 4)
+MKRP_SEQ_GC_MAX=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 5)
+MKRP_MAPPED_SEQ=$(grep "reads mapped:" ${OUTDIR}/sam_summary_number.txt | cut -f 2)
+MKRP_UNMAPPED_SEQ=$(grep "reads unmapped:" ${OUTDIR}/sam_summary_number.txt | cut -f 2)
+MKRP_MAPPING_RATE=0$(echo ${MKRP_MAPPED_SEQ} / $MKRP_TOTAL_SEQ | bc -l)
+MKRP_TOTAL_VARIANT=$(grep "number of records:" ${OUTDIR}/vcf_summary_number.txt | cut -f 3)
+MKRP_SNP=$(grep "number of SNPs:" ${OUTDIR}/vcf_summary_number.txt | cut -f 3)
+MKRP_INDEL=$(grep "number of indels:" ${OUTDIR}/vcf_summary_number.txt | cut -f 3)
 
 # store statistics
-echo "total_seq:" $mkrp_total_seq | tee -a ${outputdir}/stats.txt
-echo "seq_length_mean:" $mkrp_seq_length_mean | tee -a ${outputdir}/stats.txt
-echo "seq_length_stat:" $mkrp_seq_length_stat | tee -a ${outputdir}/stats.txt
-echo "seq_length_min:" $mkrp_seq_length_min | tee -a ${outputdir}/stats.txt
-echo "seq_length_q1:" $mkrp_seq_length_q1 | tee -a ${outputdir}/stats.txt
-echo "seq_length_median:" $mkrp_seq_length_median | tee -a ${outputdir}/stats.txt
-echo "seq_length_q3:" $mkrp_seq_length_q3 | tee -a ${outputdir}/stats.txt
-echo "seq_length_max:" $mkrp_seq_length_max | tee -a ${outputdir}/stats.txt
-echo "seq_gc_mean:" $mkrp_seq_gc_mean | tee -a ${outputdir}/stats.txt
-echo "seq_gc_stat:" $mkrp_seq_gc_stat | tee -a ${outputdir}/stats.txt
-echo "seq_gc_min:" $mkrp_seq_gc_min | tee -a ${outputdir}/stats.txt
-echo "seq_gc_q1:" $mkrp_seq_gc_q1 | tee -a ${outputdir}/stats.txt
-echo "seq_gc_median:" $mkrp_seq_gc_median | tee -a ${outputdir}/stats.txt
-echo "seq_gc_q3:" $mkrp_seq_gc_q3 | tee -a ${outputdir}/stats.txt
-echo "seq_gc_max:" $mkrp_seq_gc_max | tee -a ${outputdir}/stats.txt
-echo "mapped_seq:" $mkrp_mapped_seq | tee -a ${outputdir}/stats.txt
-echo "unmapped_seq:" $mkrp_unmapped_seq | tee -a ${outputdir}/stats.txt
-echo "mapping_rate:" $mkrp_mapping_rate | tee -a ${outputdir}/stats.txt
-echo "total_variant:" $mkrp_total_variant | tee -a ${outputdir}/stats.txt
-echo "snp:" $mkrp_snp | tee -a ${outputdir}/stats.txt
-echo "indel:" $mkrp_indel | tee -a ${outputdir}/stats.txt
+echo "total_seq:" ${MKRP_TOTAL_SEQ} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_mean:" ${MKRP_SEQ_LENGTH_MEAN} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_stat:" ${MKRP_SEQ_LENGTH_STAT} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_min:" ${MKRP_SEQ_LENGTH_MIN} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_q1:" ${MKRP_SEQ_LENGTH_Q1} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_median:" ${MKRP_SEQ_LENGTH_MEDIAN} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_q3:" ${MKRP_SEQ_LENGTH_Q3} | tee -a ${OUTDIR}/stats.txt
+echo "seq_length_max:" ${MKRP_SEQ_LENGTH_MAX} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_mean:" ${MKRP_SEQ_GC_MEAN} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_stat:" ${MKRP_SEQ_GC_STAT} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_min:" ${MKRP_SEQ_GC_MIN} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_q1:" ${MKRP_SEQ_GC_Q1} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_median:" ${MKRP_SEQ_GC_MEDIAN} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_q3:" ${MKRP_SEQ_GC_Q3} | tee -a ${OUTDIR}/stats.txt
+echo "seq_gc_max:" ${MKRP_SEQ_GC_MAX} | tee -a ${OUTDIR}/stats.txt
+echo "mapped_seq:" ${MKRP_MAPPED_SEQ} | tee -a ${OUTDIR}/stats.txt
+echo "unmapped_seq:" ${MKRP_UNMAPPED_SEQ} | tee -a ${OUTDIR}/stats.txt
+echo "mapping_rate:" ${MKRP_MAPPING_RATE} | tee -a ${OUTDIR}/stats.txt
+echo "total_variant:" ${MKRP_TOTAL_VARIANT} | tee -a ${OUTDIR}/stats.txt
+echo "snp:" ${MKRP_SNP} | tee -a ${OUTDIR}/stats.txt
+echo "indel:" ${MKRP_INDEL} | tee -a ${OUTDIR}/stats.txt
 
 
 ####################
 echo "[$(date) ] Generate report file in output directory"
 # Make report.tex
-reporter.py --output ${outputdir}/report.tex \
-       --report-title "${label} Variant Analysis Report" \
+reporter.py --output ${OUTDIR}/report.tex \
+       --report-title "${OPT_LABEL} Variant Analysis Report" \
        --report-author "MS Health Care Team" \
-       --sum-total-seq $mkrp_total_seq \
-       --sum-mapping-rate $mkrp_mapping_rate \
+       --sum-total-seq ${MKRP_TOTAL_SEQ} \
+       --sum-mapping-rate ${MKRP_MAPPING_RATE} \
        --sum-refgenome GRCh38 \
-       --sum-variants-number $mkrp_total_variant \
-       --sum-snp-number $mkrp_snp \
-       --sum-indel-number $mkrp_indel \
+       --sum-variants-number ${MKRP_TOTAL_VARIANT} \
+       --sum-snp-number ${MKRP_SNP} \
+       --sum-indel-number ${MKRP_INDEL} \
        --qc-seq-mode "Single End" \
-       --qc-total-seq $mkrp_total_seq \
+       --qc-total-seq ${MKRP_TOTAL_SEQ} \
        --qc-total-pair 0 \
-       --qc-seq-length-mean $mkrp_seq_length_mean \
-       --qc-seq-length-min $mkrp_seq_length_min \
-       --qc-seq-length-median $mkrp_seq_length_median \
-       --qc-seq-length-max $mkrp_seq_length_max \
-       --qc-seq-length-q1 $mkrp_seq_length_q1 \
-       --qc-seq-length-q3 $mkrp_seq_length_q3 \
-       --qc-seq-gc-mean $mkrp_seq_gc_mean \
-       --qc-seq-gc-min $mkrp_seq_gc_min \
-       --qc-seq-gc-median $mkrp_seq_gc_median \
-       --qc-seq-gc-max $mkrp_seq_gc_max \
-       --qc-seq-gc-q1 $mkrp_seq_gc_q1 \
-       --qc-seq-gc-q3 $mkrp_seq_gc_q3 \
+       --qc-seq-length-mean ${MKRP_SEQ_LENGTH_MEAN} \
+       --qc-seq-length-min ${MKRP_SEQ_LENGTH_MIN} \
+       --qc-seq-length-median ${MKRP_SEQ_LENGTH_MEDIAN} \
+       --qc-seq-length-max ${MKRP_SEQ_LENGTH_MAX} \
+       --qc-seq-length-q1 ${MKRP_SEQ_LENGTH_Q1} \
+       --qc-seq-length-q3 ${MKRP_SEQ_LENGTH_Q3} \
+       --qc-seq-gc-mean ${MKRP_SEQ_GC_MEAN} \
+       --qc-seq-gc-min ${MKRP_SEQ_GC_MIN} \
+       --qc-seq-gc-median ${MKRP_SEQ_GC_MEDIAN} \
+       --qc-seq-gc-max ${MKRP_SEQ_GC_MAX} \
+       --qc-seq-gc-q1 ${MKRP_SEQ_GC_Q1} \
+       --qc-seq-gc-q3 ${MKRP_SEQ_GC_Q3} \
        --map-maptool "BWA MEM" \
        --map-maptool-v "0.7.17" \
        --map-refgenome "GRCh38" \
@@ -307,14 +309,14 @@ reporter.py --output ${outputdir}/report.tex \
        --map-samtool-v "1.7" \
        --map-mkdup "Picard" \
        --map-mkdup-v "2.18.11" \
-       --map-total-seq $mkrp_total_seq \
-       --map-mapped-seq $mkrp_mapped_seq \
-       --map-unmapped-seq $mkrp_unmapped_seq \
-       --vc-total-variant $mkrp_total_variant \
-       --vc-snv-number $mkrp_snp \
-       --vc-indel-number $mkrp_indel \
-       --figpath "${outputdir}/fig/" \
-       --fig-pipeline $(basename $figpipeline) \
+       --map-total-seq ${MKRP_TOTAL_SEQ} \
+       --map-mapped-seq ${MKRP_MAPPED_SEQ} \
+       --map-unmapped-seq ${MKRP_UNMAPPED_SEQ} \
+       --vc-total-variant ${MKRP_TOTAL_VARIANT} \
+       --vc-snv-number ${MKRP_SNP} \
+       --vc-indel-number ${MKRP_INDEL} \
+       --figpath "${OUTDIR}/fig/" \
+       --fig-pipeline $(basename ${OPT_FIGPIPELINE}) \
        --fig-qc-seq-length-distribution "qc_seq_length_distribution.png" \
        --fig-qc-base-quality-boxplot "qc_base_quality_boxplot.png" \
        --fig-qc-seq-quality-distribution "qc_seq_quality_distribution.png" \
@@ -326,7 +328,7 @@ reporter.py --output ${outputdir}/report.tex \
 
 # make pdf
 
-xelatex -output-directory=${outputdir} ${outputdir}/report.tex
-xelatex -output-directory=${outputdir} ${outputdir}/report.tex
+xelatex -output-directory=${OUTDIR} ${OUTDIR}/report.tex
+xelatex -output-directory=${OUTDIR} ${OUTDIR}/report.tex
 
 ####################

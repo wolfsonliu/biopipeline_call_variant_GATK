@@ -281,8 +281,6 @@ tex = "\n".join([
     "  \\caption{{Variant Annotation}}",
     "  \\label{{fig:snvannobar}}",
     "\\end{{figure}}",
-    "\\section{{Result Explain}}",
-    "\\label{{sec:resultexplain}}",
     "\\end{{document}}"
 ])
 

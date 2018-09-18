@@ -1,12 +1,12 @@
 #! /bin/bash
-
+set -e
 # Used to download reference file or install softwares
 
 basedir=${HOME}
 
-softwaredir=${basedir}/software
+softwaredir=${basedir}/Software
 
-refdir=${basedir}/reference
+refdir=${basedir}/Reference
 
 ####################
 # Reference
