@@ -353,8 +353,8 @@ parser.add_argument(
     nargs='?', default='vc_snvtype.png'
 )
 parser.add_argument(
-    '--fig-vc-snvanno',
-    nargs='?', default='vc_snvanno.png'
+    '--fig-vc-annovcf',
+    nargs='?', default='vc_annovcf.png'
 )
 
 

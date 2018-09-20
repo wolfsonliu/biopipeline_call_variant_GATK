@@ -2,7 +2,7 @@
 set -eu
 
 function usage {
-    echo "Usage: $0 -l label -p pipeline.png -q qc.zip -s samtools_stats.txt -v bcftools_stats.txt -f input.fastq -d outdir" 1>&2
+    echo "Usage: $0 -l label -p pipeline.png -q qc.zip -s samtools_stats.txt -v bcftools_stats.txt -f input.fastq -b anno.vcf -d outdir" 1>&2
 }
 
 
@@ -30,6 +30,10 @@ while getopts "hl:p:q:s:v:f:d:" opt; do
             # input fastq file
             OPT_INPUTFQ=${OPTARG}
             ;;
+        b)
+            # input fastq file
+            OPT_INPUTVCF=${OPTARG}
+            ;;
         d)
             # output directory
             OPT_OUTDIR=${OPTARG}
@@ -49,7 +53,7 @@ done
 
 shift $((OPTIND-1))
 
-if [ -z ${OPT_LABEL} -o -z ${OPT_QCFILE} -o -z ${OPT_INPUTFQ} -o -z ${OPT_SSTATFILE} -o -z ${OPT_VSTATFILE} ]; then
+if [ -z ${OPT_LABEL} -o -z ${OPT_QCFILE} -o -z ${OPT_INPUTFQ} -o -z ${OPT_INPUTVCF} -o -z ${OPT_SSTATFILE} -o -z ${OPT_VSTATFILE} ]; then
    usage
    exit 1
 fi
@@ -148,16 +152,6 @@ unzip ${OPT_QCFILE} -d ${OUTDIR}
 QCDIR=${OUTDIR}/$(basename ${OPT_QCFILE%[.]zip})
 
 ####################
-echo "[$(date) ] Copy FastQC figures to output directory"
-# get figure
-cp ${OPT_FIGPIPELINE} ${OUTDIR}/fig/$(basename ${OPT_FIGPIPELINE})
-cp ${QCDIR}/Images/sequence_length_distribution.png ${OUTDIR}/fig/qc_seq_length_distribution.png
-cp ${QCDIR}/Images/per_base_quality.png ${OUTDIR}/fig/qc_base_quality_boxplot.png
-cp ${QCDIR}/Images/per_sequence_quality.png ${OUTDIR}/fig/qc_seq_quality_distribution.png
-cp ${QCDIR}/Images/per_base_sequence_content.png ${OUTDIR}/fig/qc_base_content.png
-cp ${QCDIR}/Images/per_sequence_gc_content.png ${OUTDIR}/fig/qc_seqe_gc.png
-
-####################
 echo "[$(date) ] Fetch FastQC data to output directory"
 # get data
 getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUTDIR}/qc_base_quality.txt
@@ -226,6 +220,26 @@ echo -e "id\tbin\tnumber of genotypes\tfraction of genotypes (%)\tnumber of site
 cat ${OPT_VSTATFILE} | grep ^DP | cut -f 2- >> ${OUTDIR}/vcf_depth_distribution.txt
 
 ####################
+echo "[$(date) ] Copy FastQC figures to output directory"
+# get figure
+cp ${OPT_FIGPIPELINE} ${OUTDIR}/fig/$(basename ${OPT_FIGPIPELINE})
+
+plotqc_seq_length.py --input ${OUTDIR}/qc_seq_length_distribution.txt \
+                     --output ${OUTDIR}/fig/qc_seq_length_distribution.pdf
+plotqc_base_quality.py --input ${OUTDIR}/qc_base_quality.txt \
+                       --output ${OUTDIR}/fig/qc_base_quality_boxplot.pdf
+plotqc_seq_quality.py --input ${OUTDIR}/qc_seq_quality_distribution.txt \
+                      --output ${OUTDIR}/fig/qc_seq_quality_distribution.pdf
+plotqc_base_content.py --input ${OUTDIR}/qc_base_content.txt \
+                       --output ${OUTDIR}/fig/qc_base_content.pdf
+plotqc_seq_gc.py --input ${OUTDIR}qc_seq_gc.txt \
+   --output ${OUTDIR}/fig/qc_seq_gc.pdf
+plotvcf_piesnp.py --input ${OPT_INPUTVCF} --output ${OUTDIR}/fig/vc_snvtype.pdf
+plotvcf_annovcf.py --input ${OPT_INPUTVCF} --output ${OUTDIR}/fig/vc_annovcf.pdf
+
+
+
+####################
 echo "[$(date) ] Store statistics data"
 # make variablen
 MKRP_TOTAL_SEQ=$(grep "raw total sequences:" ${OUTDIR}/sam_summary_number.txt | cut -f 2)
@@ -245,7 +259,7 @@ MKRP_SEQ_GC_Q3=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 4)
 MKRP_SEQ_GC_MAX=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 5)
 MKRP_MAPPED_SEQ=$(grep "reads mapped:" ${OUTDIR}/sam_summary_number.txt | cut -f 2)
 MKRP_UNMAPPED_SEQ=$(grep "reads unmapped:" ${OUTDIR}/sam_summary_number.txt | cut -f 2)
-MKRP_MAPPING_RATE=0$(echo ${MKRP_MAPPED_SEQ} / $MKRP_TOTAL_SEQ | bc -l)
+MKRP_MAPPING_RATE=$(echo 0 | awk -v num=${MKRP_MAPPED_SEQ} -v deno=$MKRP_TOTAL_SEQ '{print num/deno}')
 MKRP_TOTAL_VARIANT=$(grep "number of records:" ${OUTDIR}/vcf_summary_number.txt | cut -f 3)
 MKRP_SNP=$(grep "number of SNPs:" ${OUTDIR}/vcf_summary_number.txt | cut -f 3)
 MKRP_INDEL=$(grep "number of indels:" ${OUTDIR}/vcf_summary_number.txt | cut -f 3)
@@ -317,13 +331,13 @@ reporter.py --output ${OUTDIR}/report.tex \
        --vc-indel-number ${MKRP_INDEL} \
        --figpath "${OUTDIR}/fig/" \
        --fig-pipeline $(basename ${OPT_FIGPIPELINE}) \
-       --fig-qc-seq-length-distribution "qc_seq_length_distribution.png" \
-       --fig-qc-base-quality-boxplot "qc_base_quality_boxplot.png" \
-       --fig-qc-seq-quality-distribution "qc_seq_quality_distribution.png" \
-       --fig-qc-base-content "qc_base_content.png" \
-       --fig-qc-seq-gc "qc_seqe_gc.png" \
-       --fig-vc-snvtype "" \
-       --fig-vc-snvanno ""
+       --fig-qc-seq-length-distribution "qc_seq_length_distribution.pdf" \
+       --fig-qc-base-quality-boxplot "qc_base_quality_boxplot.pdf" \
+       --fig-qc-seq-quality-distribution "qc_seq_quality_distribution.pdf" \
+       --fig-qc-base-content "qc_base_content.pdf" \
+       --fig-qc-seq-gc "qc_seq_gc.pdf" \
+       --fig-vc-snvtype "vc_snvtype.pdf" \
+       --fig-vc-annovcf "vc_annovcf.pdf"
 
 
 # make pdf

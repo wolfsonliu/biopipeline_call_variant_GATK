@@ -2,7 +2,7 @@
 set -e
 # Used to download reference file or install softwares
 
-basedir=${HOME}
+basedir=${HOME}/Documents
 
 softwaredir=${basedir}/Software
 

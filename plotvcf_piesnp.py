@@ -8,6 +8,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 ####################
+
 parser = argparse.ArgumentParser(
     description='Plot pie chart of SNP types in VCF file'
 )
@@ -20,10 +21,11 @@ parser.add_argument(
 )
 
 args = vars(parser.parse_args())
+
 ####################
 
 ntcolor = {
-    'A': {'A':'#a50f15', 'C':'#de2d26', 'G':'#fb6a4a', 'T':'#fc9272'},
+    'A': {'A':'#a63603', 'C':'#e6550d', 'G':'#fd8d3c', 'T':'#fdae6b'},
     'C': {'C':'#006d2c', 'A':'#31a354', 'G':'#74c476', 'T':'#a1d99b'},
     'G': {'G':'#08519c', 'A':'#3182bd', 'C':'#6baed6', 'T':'#9ecae1'},
     'T': {'T':'#54278f', 'A':'#756bb1', 'C':'#9e9ac8', 'G':'#bcbddc'}
@@ -35,15 +37,12 @@ data = pd.read_table(
     args['input'],
     header=None, comment='#'
 )
-
 data.columns = [
     'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', '20'
 ]
-
 data['reflen'] = data['REF'].map(len)
 data['altlen'] = data['ALT'].map(len)
 data['issnp'] = np.logical_and(data['reflen'] == 1, data['altlen'] == 1)
-
 data['vtype'] = data[['REF', 'ALT']].apply(lambda x : x['REF'] + '->' + x['ALT'], axis=1)
 
 snptype = pd.DataFrame(
@@ -54,9 +53,8 @@ snptype['ref'] = snptype.index.str.split('->').map(lambda x: x[0])
 snptype['alt'] = snptype.index.str.split('->').map(lambda x: x[1])
 snptype['outer_color'] = snptype.apply(lambda x: ntcolor[x['ref']][x['ref']], axis=1)
 snptype['inner_color'] = snptype.apply(lambda x: ntcolor[x['ref']][x['alt']], axis=1)
-####################
 
-fig = plt.figure()
+####################
 
 fig, axes = plt.subplots()
 fig.suptitle('SNV Type Pie Chart')
@@ -79,4 +77,5 @@ axes.pie(
 axes.axis('equal')
 
 fig.savefig(args['output'], transparent=True)
+
 ################################################################################
