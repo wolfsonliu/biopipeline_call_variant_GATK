@@ -11,19 +11,19 @@ while getopts "hr:f:d:l:t:" opt; do
             usage
             ;;
         r)
-            referencefile=$OPTARG
+            REFERENCEFILE=$OPTARG
             ;;
         f)
             # input fastq file
-            inputfq=$OPTARG
+            INPUTFQ=$OPTARG
             ;;
         d)
             # output directory
-            outputdir=$OPTARG
+            OUT_DIR=$OPTARG
             ;;
         l)
             # output name
-            outputlabel=$OPTARG
+            OUTLABEL=$OPTARG
             ;;
         t)
             # thread
@@ -48,33 +48,26 @@ else
     DIR=$(dirname $0)
 fi
 
-
-
 shift $((OPTIND-1))
-
-outdir=${outputdir}
-outlabel=${outputlabel}
-outprefix=${outdir}/${outlabel}
-
 # read reference file path
-source $referencefile
+source $REFERENCEFILE
 
 echo $PATH
 ################################################################################
 
 
-if [ ! -e ${outdir}/log ]; then
-    mkdir -p ${outdir}/log
+if [ ! -e ${OUT_DIR}/log ]; then
+    mkdir -p ${OUT_DIR}/log
 fi
 
 
-if [ ! -e ${outdir}/bam ]; then
-    mkdir -p ${outdir}/bam
+if [ ! -e ${OUT_DIR}/bam ]; then
+    mkdir -p ${OUT_DIR}/bam
 fi
 
 
-if [ ! -e ${outdir}/vcf ]; then
-    mkdir -p ${outdir}/vcf
+if [ ! -e ${OUT_DIR}/vcf ]; then
+    mkdir -p ${OUT_DIR}/vcf
 fi
 
 ####################
@@ -83,9 +76,9 @@ fi
 #     output: html
 ####################
 
-echo "[$(date)] < Start >  FastQC: "${inputfq}
-$Fastqc -o ${outdir}/log/ -f fastq ${inputfq}
-echo "[$(date)] <  End  >  FastQC: result in "${outdir}/log
+echo "[$(date)] < Start >  FastQC: "${INPUTFQ}
+$Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ}
+echo "[$(date)] <  End  >  FastQC: result in "${OUT_DIR}/log
 
 ####################
 # Mapping: bwa
@@ -94,11 +87,11 @@ echo "[$(date)] <  End  >  FastQC: result in "${outdir}/log
 #     output: sorted.bam
 ####################
 
-echo "[$(date)] < Start >  bwa: "${inputfq}
-$Bwa mem -M ${bwaindexdir}/genome.fa ${inputfq} 2> ${outdir}/log/bwa.log | \
+echo "[$(date)] < Start >  bwa: "${INPUTFQ}
+$Bwa mem -M ${BWA_INDEX_DIR}/genome.fa ${INPUTFQ} 2> ${OUT_DIR}/log/bwa.log | \
     samtools view -bS - | \
-    samtools sort -@ ${PARR} - -o ${outdir}/bam/${outlabel}.bam
-echo "[$(date)] <  End  >  bwa: "${outdir}/bam/${outlabel}.bam
+    samtools sort -@ ${PARR} - -o ${OUT_DIR}/bam/${OUTLABEL}.bam
+echo "[$(date)] <  End  >  bwa: "${OUT_DIR}/bam/${OUTLABEL}.bam
 
 ####################
 # Read Group: picard
@@ -106,17 +99,17 @@ echo "[$(date)] <  End  >  bwa: "${outdir}/bam/${outlabel}.bam
 #    output: sorted.bam
 ####################
 
-echo "[$(date)] < Start >  Picard AddOrReplaceReadGroups: "${outdir}/bam/${outlabel}.bam
+echo "[$(date)] < Start >  Picard AddOrReplaceReadGroups: "${OUT_DIR}/bam/${OUTLABEL}.bam
 $Picard AddOrReplaceReadGroups \
-     I=${outdir}/bam/${outlabel}.bam \
-     O=${outdir}/bam/${outlabel}.sorted.bam \
+     I=${OUT_DIR}/bam/${OUTLABEL}.bam \
+     O=${OUT_DIR}/bam/${OUTLABEL}.sorted.bam \
      SORT_ORDER=coordinate \
-     RGID=${outlabel} \
+     RGID=${OUTLABEL} \
      RGLB=bwa \
      RGPL=illumina \
      RGPU=unit1 \
-     RGSM=20 2> ${outdir}/log/picard.addgroup.log
-echo "[$(date)] <  End  >  Picard AddOrReplaceReadGroups: "${outdir}/bam/${outlabel}.sorted.bam
+     RGSM=20 2> ${OUT_DIR}/log/picard.addgroup.log
+echo "[$(date)] <  End  >  Picard AddOrReplaceReadGroups: "${OUT_DIR}/bam/${OUTLABEL}.sorted.bam
 
 ####################
 # Mark Duplicates: picard
@@ -125,11 +118,11 @@ echo "[$(date)] <  End  >  Picard AddOrReplaceReadGroups: "${outdir}/bam/${outla
 #    output: markdup.txt
 ####################
 
-echo "[$(date)] < Start >  Picard MarkDuplicates: "${outdir}/bam/${outlabel}.sorted.bam
-$Picard MarkDuplicates I=${outdir}/bam/${outlabel}.sorted.bam \
-       O=${outdir}/bam/${outlabel}.sorted.markdup.bam \
-       M=${outdir}/bam/${outlabel}.sorted.markdup.txt 2> ${outdir}/log/picard.markduplicates.log
-echo "[$(date)] <  End  >  Picard MarkDuplicates: "${outdir}/bam/${outlabel}.sorted.markdup.bam
+echo "[$(date)] < Start >  Picard MarkDuplicates: "${OUT_DIR}/bam/${OUTLABEL}.sorted.bam
+$Picard MarkDuplicates I=${OUT_DIR}/bam/${OUTLABEL}.sorted.bam \
+       O=${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.bam \
+       M=${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.txt 2> ${OUT_DIR}/log/picard.markduplicates.log
+echo "[$(date)] <  End  >  Picard MarkDuplicates: "${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.bam
 
 ####################
 # Statistics of bam file: samtools
@@ -137,7 +130,7 @@ echo "[$(date)] <  End  >  Picard MarkDuplicates: "${outdir}/bam/${outlabel}.sor
 #    output: markdup.sorted.bam.stats
 ####################
 
-$Samtools stats ${outdir}/bam/${outlabel}.sorted.markdup.bam > ${outdir}/log/${outlabel}.sorted.markdup.bam.stats
+$Samtools stats ${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.bam > ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats
 
 ####################
 # Build bai: samtools
@@ -145,7 +138,7 @@ $Samtools stats ${outdir}/bam/${outlabel}.sorted.markdup.bam > ${outdir}/log/${o
 #    output: markdup.sorted.bai
 ####################
 
-$Samtools index -b ${outdir}/bam/${outlabel}.sorted.markdup.bam
+$Samtools index -b ${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.bam
 
 ####################
 # Call variants: GATK HaplotypeCaller
@@ -154,14 +147,14 @@ $Samtools index -b ${outdir}/bam/${outlabel}.sorted.markdup.bam
 #    output: vcf
 ####################
 
-echo "[$(date)] < Start >  GATK HaplotypeCaller: "${outdir}/bam/${outlabel}.sorted.markdup.bam
+echo "[$(date)] < Start >  GATK HaplotypeCaller: "${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.bam
 $Gatk --java-options "-Xmx8G" HaplotypeCaller \
-     -R ${genomefa} \
+     -R ${GENOME_FA} \
      --output-mode EMIT_VARIANTS_ONLY \
      -ERC GVCF \
-     -I ${outdir}/bam/${outlabel}.sorted.markdup.bam \
-     -O ${outdir}/vcf/${outlabel}.g.vcf.gz 2> ${outdir}/log/gatk.HaplotypeCaller.log
-echo "[$(date)] <  End  >  GATK HaplotypeCaller: "${outdir}/bam/${outlabel}.g.vcf.gz
+     -I ${OUT_DIR}/bam/${OUTLABEL}.sorted.markdup.bam \
+     -O ${OUT_DIR}/vcf/${OUTLABEL}.g.vcf.gz 2> ${OUT_DIR}/log/gatk.HaplotypeCaller.log
+echo "[$(date)] <  End  >  GATK HaplotypeCaller: "${OUT_DIR}/bam/${OUTLABEL}.g.vcf.gz
 
 ####################
 # Convert gvcf to vcf: GATK GenotypeGVCFs
@@ -169,12 +162,12 @@ echo "[$(date)] <  End  >  GATK HaplotypeCaller: "${outdir}/bam/${outlabel}.g.vc
 #    output: vcf
 ####################
 
-echo "[$(date)] < Start >  GATK GenotypeGVCFs: "${outdir}/bam/${outlabel}.g.vcf.gz
+echo "[$(date)] < Start >  GATK GenotypeGVCFs: "${OUT_DIR}/bam/${OUTLABEL}.g.vcf.gz
 $Gatk --java-options "-Xmx8G" GenotypeGVCFs \
-     -R ${genomefa} \
-     -V ${outdir}/vcf/${outlabel}.g.vcf.gz \
-     -O ${outdir}/vcf/${outlabel}.vcf.gz 2> ${outdir}/log/gatk.GenotypeGVCFs.log
-echo "[$(date)] <  End  >  GATK GenotypeGVCFs: "${outdir}/bam/${outlabel}.vcf.gz
+     -R ${GENOME_FA} \
+     -V ${OUT_DIR}/vcf/${OUTLABEL}.g.vcf.gz \
+     -O ${OUT_DIR}/vcf/${OUTLABEL}.vcf.gz 2> ${OUT_DIR}/log/gatk.GenotypeGVCFs.log
+echo "[$(date)] <  End  >  GATK GenotypeGVCFs: "${OUT_DIR}/bam/${OUTLABEL}.vcf.gz
 
 ####################
 # Filter: GATK VariantFiltration
@@ -182,19 +175,19 @@ echo "[$(date)] <  End  >  GATK GenotypeGVCFs: "${outdir}/bam/${outlabel}.vcf.gz
 #    ouput: vcf
 ####################
 
-echo "[$(date)] < Start >  GATK VariantFiltration: "${outdir}/bam/${outlabel}.vcf.gz
+echo "[$(date)] < Start >  GATK VariantFiltration: "${OUT_DIR}/bam/${OUTLABEL}.vcf.gz
 $Gatk VariantFiltration \
-     -R ${genomefa} \
-     -V ${outdir}/vcf/${outlabel}.vcf.gz \
-     -O ${outdir}/vcf/${outlabel}.filter0.vcf.gz \
+     -R ${GENOME_FA} \
+     -V ${OUT_DIR}/vcf/${OUTLABEL}.vcf.gz \
+     -O ${OUT_DIR}/vcf/${OUTLABEL}.filter0.vcf.gz \
      --filter-expression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0" \
-     --filter-name "SNPfilter" 2> ${outdir}/log/gatk.VariantFiltration.snp.log
-echo "[$(date)] <  End  >  GATK VariantFiltration: "${outdir}/bam/${outlabel}.filter0.vcf.gz
+     --filter-name "SNPfilter" 2> ${OUT_DIR}/log/gatk.VariantFiltration.snp.log
+echo "[$(date)] <  End  >  GATK VariantFiltration: "${OUT_DIR}/bam/${OUTLABEL}.filter0.vcf.gz
 
-zcat ${outdir}/vcf/${outlabel}.filter0.vcf.gz | grep -v "SNPfilter" > ${outdir}/vcf/${outlabel}.filter.vcf
+zcat ${OUT_DIR}/vcf/${OUTLABEL}.filter0.vcf.gz | grep -v "SNPfilter" > ${OUT_DIR}/vcf/${OUTLABEL}.filter.vcf
 
-rm -f ${outdir}/vcf/${outlabel}.filter0.vcf.gz
-rm -f ${outdir}/vcf/${outlabel}.filter0.vcf.gz.tbi
+rm -f ${OUT_DIR}/vcf/${OUTLABEL}.filter0.vcf.gz
+rm -f ${OUT_DIR}/vcf/${OUTLABEL}.filter0.vcf.gz.tbi
 
 ####################
 # Variants Annotation: annovar
@@ -204,19 +197,19 @@ rm -f ${outdir}/vcf/${outlabel}.filter0.vcf.gz.tbi
 ####################
 
 
-echo "[$(date)] < Start >  ANNOVAR table_annovar.pl: "${outdir}/vcf/${outlabel}.filter.vcf
+echo "[$(date)] < Start >  ANNOVAR table_annovar.pl: "${OUT_DIR}/vcf/${OUTLABEL}.filter.vcf
 $Table_annovar --buildver hg38 \
                --remove --protocol refGene,clinvar_20180603,exac03,avsnp147,dbnsfp30a \
                --operation g,f,f,f,f -nastring . --polish --vcfinput \
-               --out ${outdir}/vcf/${outlabel} \
-               ${outdir}/vcf/${outlabel}.filter.vcf ${ANNOVARdir}
-echo "[$(date)] <  End  >  ANNOVAR table_annovar.pl: " ${outdir}/vcf/${outlabel}.hg38_multianno.txt
+               --out ${OUT_DIR}/vcf/${OUTLABEL} \
+               ${OUT_DIR}/vcf/${OUTLABEL}.filter.vcf ${ANNOVAR_DIR}
+echo "[$(date)] <  End  >  ANNOVAR table_annovar.pl: " ${OUT_DIR}/vcf/${OUTLABEL}.hg38_multianno.txt
 
 
-cp ${outdir}/vcf/${outlabel}.hg38_multianno.vcf ${outdir}/${outlabel}.anno.vcf
-cp ${outdir}/vcf/${outlabel}.hg38_multianno.txt ${outdir}/${outlabel}.anno.txt
+cp ${OUT_DIR}/vcf/${OUTLABEL}.hg38_multianno.vcf ${OUT_DIR}/${OUTLABEL}.anno.vcf
+cp ${OUT_DIR}/vcf/${OUTLABEL}.hg38_multianno.txt ${OUT_DIR}/${OUTLABEL}.anno.txt
 
-echo "[$(date)] Annotated VCF: " ${outdir}/${outlabel}.anno.vcf
+echo "[$(date)] Annotated VCF: " ${OUT_DIR}/${OUTLABEL}.anno.vcf
 
 ####################
 # Statistics of bam file: samtools
@@ -224,7 +217,7 @@ echo "[$(date)] Annotated VCF: " ${outdir}/${outlabel}.anno.vcf
 #    output: markdup.sorted.bam.stats
 ####################
 
-$Bcftools stats ${outdir}/vcf/${outlabel}.filter.vcf > ${outdir}/log/${outlabel}.filter.vcf.stats
+$Bcftools stats ${OUT_DIR}/vcf/${OUTLABEL}.filter.vcf > ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats
 
 
 ####################
@@ -232,14 +225,14 @@ $Bcftools stats ${outdir}/vcf/${outlabel}.filter.vcf > ${outdir}/log/${outlabel}
 ####################
 
 
-$Makereport -l ${outlabel} -p ${pipelinedir}/pipeline.png \
-     -q ${outdir}/log/$(basename ${inputfq%[.]*})_fastqc.zip \
-     -s ${outdir}/log/${outlabel}.sorted.markdup.bam.stats \
-     -v ${outdir}/log/${outlabel}.filter.vcf.stats \
-     -f ${inputfq} -b ${outdir}/${outlabel}.anno.vcf \
-     -d ${outdir}/report
+$Makereport -l ${OUTLABEL} -p ${pipelinedir}/gatk4.pdf \
+     -q ${OUT_DIR}/log/$(basename ${INPUTFQ%[.]*})_fastqc.zip \
+     -s ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats \
+     -v ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats \
+     -f ${INPUTFQ} -b ${OUT_DIR}/${OUTLABEL}.anno.vcf \
+     -d ${OUT_DIR}/report
 
-cp ${outdir}/report/report.pdf ${outdir}/${outlabel}_report_$(date -I"date").pdf
+cp ${OUT_DIR}/report/report.pdf ${OUT_DIR}/${OUTLABEL}_report_$(date -I"date").pdf
 
-echo "All finished, results in: " ${outdir}
+echo "All finished, results in: " ${OUT_DIR}
 #####################

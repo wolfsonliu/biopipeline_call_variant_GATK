@@ -30,12 +30,17 @@ data = pd.read_table(
 )
 data.columns = ['Length', 'Count']
 
-data.loc[:,'LL'] = data['Length'].str.split('-').map(lambda x: x[0]).astype(int)
-data.loc[:,'LR'] = data['Length'].str.split('-').map(lambda x: x[1]).astype(int)
+data.loc[:,'LL'] = data['Length'].astype('str')\
+                                 .str\
+                                 .split('-')\
+                                 .map(lambda x: x[0])\
+                                 .astype(int)
+if data.shape[0] != 1:
+    `width = (data['LL'][1:].values - data['LL'][:-1].values).mean()
+else:
+    width = data['LL'].mean()
 
 ####################
-
-width = round((data['LR'] - data['LL']).mean()) + 1
 
 fig, axes = plt.subplots()
 fig.suptitle('Sequence Length Distribution')

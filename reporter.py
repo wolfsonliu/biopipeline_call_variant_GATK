@@ -277,7 +277,7 @@ tex = "\n".join([
     "The annotation of each database is shown in Figure \\ref{{fig:snvannobar}}.",
     "\\begin{{figure}}[h]",
     "  \\centering",
-    "  \\includegraphics[width=0.75\\linewidth]{{{{{fig_vc_snvanno}}}}}",
+    "  \\includegraphics[width=0.75\\linewidth]{{{{{fig_vc_annovcf}}}}}",
     "  \\caption{{Variant Annotation}}",
     "  \\label{{fig:snvannobar}}",
     "\\end{{figure}}",
@@ -359,7 +359,8 @@ parser.add_argument(
 
 
 argdict = vars(parser.parse_args())
-
+argdict['report_title'] = argdict['report_title'].replace('_', '\_')
+argdict['report_author'] = argdict['report_author'].replace('_', '\_')
 
 resulttex = tex.format(**argdict)
 

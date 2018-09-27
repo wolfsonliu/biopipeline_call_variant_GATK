@@ -32,13 +32,16 @@ data.columns = ['Quality', 'Count']
 
 ####################
 
-width = (np.array(data['Quality'][1:]) - np.array(data['Quality'][:-1])).mean()
+if data.shape[0] != 1:
+    width = (np.array(data['Quality'][1:]) - np.array(data['Quality'][:-1])).mean()
+else:
+    width = data['Quality'].mean()
 
 fig, axes = plt.subplots()
 fig.suptitle('Sequence quality distribution')
 
 axes.bar(
-    data['LL'], data['Count'], width, align='edge',
+    data['Quality'], data['Count'], width, align='edge',
     color='#2166ac', edgecolor='white'
 )
 

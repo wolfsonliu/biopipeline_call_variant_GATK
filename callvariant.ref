@@ -1,26 +1,25 @@
-home=$HOME
-pipelinedir=/home/wolfson/Documents/Project/HealthCare/pipeline/callvariant_GATK4
-PATH=${pipelinedir}:$PATH
-Makereport="bash ${pipelinedir}/makereport.sh"
+PIPELINE_DIR:~/CALLVARIANT_GATK4
+PATH=${PIPELINE_DIR}:$PATH
+
 # reference
 # the absolute path for bwa index directory
-bwaindexdir=$home/Documents/Reference/gatk/BWAIndex
+BWA_INDEX_DIR=$home/Documents/Reference/gatk/BWAIndex
 
 # the absolute path for the genome.fa
 # the genome.dict should be in the same directory with genome.fa
 # 
-genomefa=$home/Documents/Reference/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa
+GENOME_FA=~/genome.fa
 
 # GATK recalibration data
 
-dbsnp=/home/wolfson/Documents/Reference/gatk/dbsnp/dbsnp_146.hg38.vcf.gz
-g1000=/home/wolfson/Documents/Reference/gatk/g1000/1000G_phase1.snps.high_confidence.hg38.vcf.gz
-hapmap=/home/wolfson/Documents/Reference/gatk/hapmap/hapmap_3.3.hg38.vcf.gz
-omni=/home/wolfson/Documents/Reference/gatk/omni/1000G_omni2.5.hg38.vcf.gz
+DBSNP=~/gatk/dbsnp/dbsnp_146.hg38.vcf.gz
+G1000=~/gatk/g1000/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+HAPMAP=~/gatk/hapmap/hapmap_3.3.hg38.vcf.gz
+OMNI=~/gatk/omni/1000G_omni2.5.hg38.vcf.gz
 
-clinvarfile=/home/wolfson/Documents/Reference/clinvar/clinvar.vcf.gz
+CLINVARFILE=~/clinvar/clinvar.vcf.gz
 
-ANNOVARdir=$home/Documents/Reference/humandb
+ANNOVAR_DIR=~/humandb
 
 ####################
 # software
@@ -34,13 +33,13 @@ Bwa=bwa
 Samtools=samtools
 Bcftools=bcftools
 
-Picard="java -jar $home/.local/env/bioinformatics/bin/picard.jar"
+Picard="java -jar ~/picard.jar"
 
-Gatk=$home/Documents/Software/gatk4/gatk
+Gatk=gatk
 
 Annotate_variation=annotate_variation.pl
 
 Table_annovar=table_annovar.pl
 
-
+Makereport="bash ${PIPELINE_DIR}/makereport.sh"
 ################################################################################
