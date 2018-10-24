@@ -1,36 +1,81 @@
 #! /bin/bash
+####################
+# makereport.sh
+#     Description:
+#         make variant calling analysis report
+#     Usage:
+#         makereport.sh -l label -r pipeline.png -p input1.fastq -q input2.fastq -f input1.qc.zip -g input2.qc.zip -s samtools_stats.txt -t bcftools_stats.txt -v anno.vcf -d outdir
+#     Parameters:
+#         h: print help
+#         l: output label
+#         r: analysis pipeline figure used in report
+#         p: fastq file path, input the fastq file path for single end sequencing or the first fastq file path for paired end sequencing
+#         q: fastq file path, not required for single end sequencing or the second fastq file path for paired end sequencing
+#         f: FastQC zip file path, input the only file path for single end sequencing or the first fastq FastQC zip file path for paired end sequencing
+#         g: FastQC zip file path, not required for single end sequencing or the second fastq FastQC zip file path for paired end sequencing
+#         s: samtools stats output txt file path
+#         t: bcftools stats output txt file path
+#         v: annotated vcf file path
+#         d: output directory path
+####################
 set -eu
 
 function usage {
-    echo "Usage: $0 -l label -p pipeline.png -q qc.zip -s samtools_stats.txt -v bcftools_stats.txt -f input.fastq -b anno.vcf -d outdir" 1>&2
+    echo "Usage: $0 -l label -r pipeline.png -p input1.fastq -q input2.fastq -f input1.qc.zip -g input2.qc.zip -s samtools_stats.txt -t bcftools_stats.txt -v anno.vcf -d outdir" 1>&2
 }
 
+function helpinfo {
+    usage
+    echo "" 1>&2
+    echo "Parameters:" 1>&2
+    echo "" 1>&2
+    echo "    h: print help " 1>&2
+    echo "    l: output label " 1>&2
+    echo "    r: analysis pipeline figure used in report " 1>&2
+    echo "    p: fastq file path, input the fastq file path for single end sequencing or the first fastq file path for paired end sequencing " 1>&2
+    echo "    q: fastq file path, not required for single end sequencing or the second fastq file path for paired end sequencing " 1>&2
+    echo "    f: FastQC zip file path, input the only file path for single end sequencing or the first fastq FastQC zip file path for paired end sequencing " 1>&2
+    echo "    g: FastQC zip file path, not required for single end sequencing or the second fastq FastQC zip file path for paired end sequencing " 1>&2
+    echo "    s: samtools stats output txt file path " 1>&2
+    echo "    t: bcftools stats output txt file path " 1>&2
+    echo "    v: annotated vcf file path " 1>&2
+    echo "    d: output directory path " 1>&2
 
-while getopts "hl:p:q:s:v:f:b:d:" opt; do
+}
+
+while getopts "hl:r:p:q:f:g:s:v:b:d:" opt; do
     case ${opt} in
         h)
-            usage
+            helpinfo
+            exit 0
             ;;
         l)
             OPT_LABEL=${OPTARG}
             ;;
-        p)
+        r)
             OPT_FIGPIPELINE=${OPTARG}
             ;;
+        p)
+            # input fastq file
+            OPT_INPUTFQ1=${OPTARG}
+            ;;
         q)
-            OPT_QCFILE=${OPTARG}
+            # input fastq file
+            OPT_INPUTFQ2=${OPTARG}
+            ;;
+        f)
+            OPT_QCFILE1=${OPTARG}
+            ;;
+        g)
+            OPT_QCFILE2=${OPTARG}
             ;;
         s)
             OPT_SSTATFILE=${OPTARG}
             ;;
-        v)
+        t)
             OPT_VSTATFILE=${OPTARG}
             ;;
-        f)
-            # input fastq file
-            OPT_INPUTFQ=${OPTARG}
-            ;;
-        b)
+        v)
             # input fastq file
             OPT_INPUTVCF=${OPTARG}
             ;;
@@ -53,7 +98,7 @@ done
 
 shift $((OPTIND-1))
 
-if [ -z ${OPT_LABEL} -o -z ${OPT_QCFILE} -o -z ${OPT_INPUTFQ} -o -z ${OPT_INPUTVCF} -o -z ${OPT_SSTATFILE} -o -z ${OPT_VSTATFILE} ]; then
+if [ -z ${OPT_LABEL} -o -z ${OPT_QCFILE1} -o -z ${OPT_INPUTFQ1} -o -z ${OPT_INPUTVCF} -o -z ${OPT_SSTATFILE} -o -z ${OPT_VSTATFILE} ]; then
    usage
    exit 1
 fi
@@ -73,7 +118,6 @@ function fq_seq_length_mean {
             print lengthsum/records;
             }' $@
 }
-
 
 function fq_seq_length_stat {
     awk 'BEGIN {}
@@ -134,6 +178,10 @@ function getblock {
         $0 ~ sflag {inblock = 1;}' $3
 }
 
+function info_stage {
+    echo "[$(date)] " $@
+}
+
 ####################
 
 if [ -z ${OPT_OUTDIR} ]; then
@@ -146,45 +194,111 @@ if [ ! -e ${OUT_DIR}/fig ]; then
     mkdir -p ${OUT_DIR}/fig
 fi
 
+# test the mode: paired end or single end
+if [ -n ${OPT_INPUTFQ1} -a -n ${OPT_INPUTFQ2} ]; then
+    SEQ_MODE="Paired End"
+elif [ -n ${OPT_INPUTFQ1} -a -z ${OPT_INPUTFQ2} ]; then
+    SEQ_MODE="Single End"
+fi
 
-echo "[$(date) ] Unzip FastQC zip file"
-unzip ${OPT_QCFILE} -d ${OUT_DIR}
 
-QCDIR=${OUT_DIR}/$(basename ${OPT_QCFILE%[.]zip})
+info_stage "Unzip FastQC zip file"
+unzip ${OPT_QCFILE1} -d ${OUT_DIR}
+QCDIR1=${OUT_DIR}/$(basename ${OPT_QCFILE1%[.]zip})
+if [ -n ${OPT_QCFILE2} ]; then
+    info_stage "Unzip Paired FastQC zip file"
+    unzip ${OPT_QCFILE2} -d ${OUT_DIR}
+    QCDIR2=${OUT_DIR}/$(basename ${OPT_QCFILE2%[.]zip})
+fi
+
+#  copy pipeline figure
+cp ${OPT_FIGPIPELINE} ${OUT_DIR}/fig/$(basename ${OPT_FIGPIPELINE})
 
 ####################
 
-echo "[$(date) ] Fetch FastQC data to output directory"
+info_stage "Fetch FastQC data to output directory"
 # get data
-getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_base_quality.txt
-getblock ">>Per sequence quality scores" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_seq_quality_distribution.txt
-getblock ">>Per base sequence content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_base_content.txt
-getblock ">>Per sequence GC content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_seq_gc.txt
-getblock ">>Per base N content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_base_n.txt
-getblock ">>Sequence Length Distribution" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_seq_length_distribution.txt
-getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_seq_duplication.txt
-getblock ">>Overrepresented sequences" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_seq_overrepresented.txt
-getblock ">>Adapter Content" ">>END_MODULE" ${QCDIR}/fastqc_data.txt > ${OUT_DIR}/qc_adapter.txt
+getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_base_quality.txt
+getblock ">>Per sequence quality scores" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_quality_distribution.txt
+getblock ">>Per base sequence content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_base_content.txt
+getblock ">>Per sequence GC content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_gc.txt
+getblock ">>Per base N content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_base_n.txt
+getblock ">>Sequence Length Distribution" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_length_distribution.txt
+getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_duplication.txt
+getblock ">>Overrepresented sequences" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_overrepresented.txt
+getblock ">>Adapter Content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_adapter.txt
+
+info_stage "Generate QC figures to output directory"
+# generate figures
+plotqc_seq_length.py --input ${OUT_DIR}/qc1_seq_length_distribution.txt \
+                     --output ${OUT_DIR}/fig/qc1_seq_length_distribution.pdf
+plotqc_base_quality.py --input ${OUT_DIR}/qc1_base_quality.txt \
+                       --output ${OUT_DIR}/fig/qc1_base_quality_boxplot.pdf
+plotqc_seq_quality.py --input ${OUT_DIR}/qc1_seq_quality_distribution.txt \
+                      --output ${OUT_DIR}/fig/qc1_seq_quality_distribution.pdf
+plotqc_base_content.py --input ${OUT_DIR}/qc1_base_content.txt \
+                       --output ${OUT_DIR}/fig/qc1_base_content.pdf
+plotqc_seq_gc.py --input ${OUT_DIR}/qc1_seq_gc.txt \
+                 --output ${OUT_DIR}/fig/qc1_seq_gc.pdf
+
+
+if [ ${SEQ_MODE} = "Paired End" ]; then
+    info_stage "Fetch Paired FastQC data to output directory"
+    getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_base_quality.txt
+    getblock ">>Per sequence quality scores" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_seq_quality_distribution.txt
+    getblock ">>Per base sequence content" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_base_content.txt
+    getblock ">>Per sequence GC content" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_seq_gc.txt
+    getblock ">>Per base N content" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_base_n.txt
+    getblock ">>Sequence Length Distribution" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_seq_length_distribution.txt
+    getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_seq_duplication.txt
+    getblock ">>Overrepresented sequences" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_seq_overrepresented.txt
+    getblock ">>Adapter Content" ">>END_MODULE" ${QCDIR2}/fastqc_data.txt > ${OUT_DIR}/qc2_adapter.txt
+    info_stage "Generate Paired QC figures to output directory"
+    # generate figures
+    plotqc_seq_length.py --input ${OUT_DIR}/qc2_seq_length_distribution.txt \
+                         --output ${OUT_DIR}/fig/qc2_seq_length_distribution.pdf
+    plotqc_base_quality.py --input ${OUT_DIR}/qc2_base_quality.txt \
+                           --output ${OUT_DIR}/fig/qc2_base_quality_boxplot.pdf
+    plotqc_seq_quality.py --input ${OUT_DIR}/qc2_seq_quality_distribution.txt \
+                          --output ${OUT_DIR}/fig/qc2_seq_quality_distribution.pdf
+    plotqc_base_content.py --input ${OUT_DIR}/qc2_base_content.txt \
+                           --output ${OUT_DIR}/fig/qc2_base_content.pdf
+    plotqc_seq_gc.py --input ${OUT_DIR}/qc2_seq_gc.txt \
+                     --output ${OUT_DIR}/fig/qc2_seq_gc.pdf
+fi
+
 
 ####################
 
-echo "[$(date) ] Fetch FastQC data to output directory"
+info_stage "Fetch FastQC data to output directory"
 # get justification
-echo "base_quality:" $(grep ">>Per base sequence quality" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "seq_quality:" $(grep ">>Per sequence quality scores" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "base_content:" $(grep ">>Per base sequence content" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "seq_gc:" $(grep ">>Per sequence GC content" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "base_n:" $(grep ">>Per base N content" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo "adapter:" $(grep ">>Adapter Content" ${QCDIR}/fastqc_data.txt | cut -f2)
+echo $(basename ${OPT_INPUTFQ1}) "base_quality:" $(grep ">>Per base sequence quality" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "seq_quality:" $(grep ">>Per sequence quality scores" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "base_content:" $(grep ">>Per base sequence content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "seq_gc:" $(grep ">>Per sequence GC content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "base_n:" $(grep ">>Per base N content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+echo $(basename ${OPT_INPUTFQ1}) "adapter:" $(grep ">>Adapter Content" ${QCDIR1}/fastqc_data.txt | cut -f2)
+
+if [ ${SEQ_MODE} = "Paired End" ]; then
+    echo $(basename ${OPT_INPUTFQ2}) "base_quality:" $(grep ">>Per base sequence quality" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "seq_quality:" $(grep ">>Per sequence quality scores" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "base_content:" $(grep ">>Per base sequence content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "seq_gc:" $(grep ">>Per sequence GC content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "base_n:" $(grep ">>Per base N content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    echo $(basename ${OPT_INPUTFQ2}) "adapter:" $(grep ">>Adapter Content" ${QCDIR2}/fastqc_data.txt | cut -f2)
+fi
 
 ####################
 
-echo "[$(date) ] Fetch SAM statistics data to output directory"
+info_stage "Fetch SAM statistics data to output directory"
 # get samstats
-cat ${OPT_SSTATFILE} | grep ^SN | cut -f 2- >> ${OUT_DIR}/sam_summary_number.txt
+cat ${OPT_SSTATFILE} | grep ^SN | cut -f 2- > ${OUT_DIR}/sam_summary_number.txt
 echo -e "gc\tcount" > ${OUT_DIR}/sam_GC_first.txt
 cat ${OPT_SSTATFILE} | grep ^GCF | cut -f 2- >> ${OUT_DIR}/sam_GC_first.txt
 echo -e "gc\tcount" > ${OUT_DIR}/sam_GC_last.txt
@@ -224,39 +338,23 @@ cat ${OPT_VSTATFILE} | grep ^ST | cut -f 2- >> ${OUT_DIR}/vcf_substitution_types
 echo -e "id\tbin\tnumber of genotypes\tfraction of genotypes (%)\tnumber of sites\tfraction of sites (%)" > ${OUT_DIR}/vcf_depth_distribution.txt
 cat ${OPT_VSTATFILE} | grep ^DP | cut -f 2- >> ${OUT_DIR}/vcf_depth_distribution.txt
 
-####################
-
-echo "[$(date) ] Copy FastQC figures to output directory"
-# get figure
-cp ${OPT_FIGPIPELINE} ${OUT_DIR}/fig/$(basename ${OPT_FIGPIPELINE})
-
-plotqc_seq_length.py --input ${OUT_DIR}/qc_seq_length_distribution.txt \
-                     --output ${OUT_DIR}/fig/qc_seq_length_distribution.pdf
-plotqc_base_quality.py --input ${OUT_DIR}/qc_base_quality.txt \
-                       --output ${OUT_DIR}/fig/qc_base_quality_boxplot.pdf
-plotqc_seq_quality.py --input ${OUT_DIR}/qc_seq_quality_distribution.txt \
-                      --output ${OUT_DIR}/fig/qc_seq_quality_distribution.pdf
-plotqc_base_content.py --input ${OUT_DIR}/qc_base_content.txt \
-                       --output ${OUT_DIR}/fig/qc_base_content.pdf
-plotqc_seq_gc.py --input ${OUT_DIR}/qc_seq_gc.txt \
-   --output ${OUT_DIR}/fig/qc_seq_gc.pdf
 plotvcf_piesnp.py --input ${OPT_INPUTVCF} --output ${OUT_DIR}/fig/vc_snvtype.pdf
 plotvcf_annovcf.py --input ${OPT_INPUTVCF} --output ${OUT_DIR}/fig/vc_annovcf.pdf
 
 ####################
 
-echo "[$(date) ] Store statistics data"
+info_stage "Store statistics data"
 # make variablen
 MKRP_TOTAL_SEQ=$(grep "raw total sequences:" ${OUT_DIR}/sam_summary_number.txt | cut -f 2)
-MKRP_SEQ_LENGTH_MEAN=$(fq_seq_length_mean ${OPT_INPUTFQ})
-MKRP_SEQ_LENGTH_STAT=$(fq_seq_length_stat ${OPT_INPUTFQ})
+MKRP_SEQ_LENGTH_MEAN=$(fq_seq_length_mean ${OPT_INPUTFQ1})
+MKRP_SEQ_LENGTH_STAT=$(fq_seq_length_stat ${OPT_INPUTFQ1})
 MKRP_SEQ_LENGTH_MIN=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 1)
 MKRP_SEQ_LENGTH_Q1=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 2)
 MKRP_SEQ_LENGTH_MEDIAN=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 3)
 MKRP_SEQ_LENGTH_Q3=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 4)
 MKRP_SEQ_LENGTH_MAX=$(echo ${MKRP_SEQ_LENGTH_STAT} | cut -d"," -f 5)
-MKRP_SEQ_GC_MEAN=$(fq_seq_gc_mean ${OPT_INPUTFQ})
-MKRP_SEQ_GC_STAT=$(fq_seq_gc_stat ${OPT_INPUTFQ})
+MKRP_SEQ_GC_MEAN=$(fq_seq_gc_mean ${OPT_INPUTFQ1})
+MKRP_SEQ_GC_STAT=$(fq_seq_gc_stat ${OPT_INPUTFQ1})
 MKRP_SEQ_GC_MIN=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 1)
 MKRP_SEQ_GC_Q1=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 2)
 MKRP_SEQ_GC_MEDIAN=$(echo ${MKRP_SEQ_GC_STAT} | cut -d"," -f 3)
@@ -269,6 +367,11 @@ MKRP_TOTAL_VARIANT=$(grep "number of records:" ${OUT_DIR}/vcf_summary_number.txt
 MKRP_SNP=$(grep "number of SNPs:" ${OUT_DIR}/vcf_summary_number.txt | cut -f 3)
 MKRP_INDEL=$(grep "number of indels:" ${OUT_DIR}/vcf_summary_number.txt | cut -f 3)
 
+if [ SEQ_MODE = "Single End" ]; then
+    MKRP_MAPPED_PAIR=0
+else
+    MKRP_MAPPED_PAIR=$(grep "reads mapped and paired:" ${OUT_DIR}/sam_summary_number.txt | cut -f 2)
+fi
 # store statistics
 echo "total_seq:" ${MKRP_TOTAL_SEQ} | tee -a ${OUT_DIR}/stats.txt
 echo "seq_length_mean:" ${MKRP_SEQ_LENGTH_MEAN} | tee -a ${OUT_DIR}/stats.txt
@@ -294,7 +397,7 @@ echo "indel:" ${MKRP_INDEL} | tee -a ${OUT_DIR}/stats.txt
 
 ####################
 
-echo "[$(date) ] Generate report file in output directory"
+info_stage "Generate report file in output directory"
 # Make report.tex
 reporter.py --output ${OUT_DIR}/report.tex \
        --report-title "${OPT_LABEL} Variant Analysis Report" \
@@ -305,7 +408,7 @@ reporter.py --output ${OUT_DIR}/report.tex \
        --sum-variants-number ${MKRP_TOTAL_VARIANT} \
        --sum-snp-number ${MKRP_SNP} \
        --sum-indel-number ${MKRP_INDEL} \
-       --qc-seq-mode "Single End" \
+       --qc-seq-mode ${SEQ_MODE} \
        --qc-total-seq ${MKRP_TOTAL_SEQ} \
        --qc-total-pair 0 \
        --qc-seq-length-mean ${MKRP_SEQ_LENGTH_MEAN} \
@@ -346,8 +449,8 @@ reporter.py --output ${OUT_DIR}/report.tex \
 
 
 # make pdf
-
-xelatex -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
-xelatex -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
+info_stage "Generate report pdf"
+xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
+xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
 
 ####################
