@@ -79,9 +79,9 @@ function qc_grep_status {
 ####################
 
 if [ -n ${OPT_INPUTFQ1} -a -n ${OPT_INPUTFQ2} ]; then
-    SEQ_MODE="Paired End"
+    SEQ_MODE="Paired-End"
 elif [ -n ${OPT_INPUTFQ1} -a -z ${OPT_INPUTFQ2} ]; then
-    SEQ_MODE="Single End"
+    SEQ_MODE="Single-End"
 fi
 
 Cutadapt=cutadapt
@@ -94,8 +94,8 @@ if (( failnum1 > 4 )); then
     exit 0
 fi
 
-if [ "${SEQ_MODE}" = "Paired End" ]; then
-    NAME_BASE2=$(basename ${OPT_INPUTZIP1%.zip})
+if [ "${SEQ_MODE}" = "Paired-End" ]; then
+    NAME_BASE2=$(basename ${OPT_INPUTZIP2%.zip})
     QC_DIR2=${OPT_OUT_DIR}/${NAME_BASE2}
     unzip ${OPT_INPUTZIP2} -d ${OPT_OUT_DIR}
     failnum2=$(qc_judge ${QC_DIR2}/summary.txt)
@@ -106,34 +106,42 @@ if [ "${SEQ_MODE}" = "Paired End" ]; then
 fi
 
 
-if [ $(qc_grep_status ${QC_DIR1}/summary.txt "Per base sequence quality") != 'FAIL' ]; then
+if [ $(qc_grep_status ${QC_DIR1}/summary.txt "Per base sequence quality") = 'FAIL' ]; then
     getblock ">>Per base sequence quality" ">>END_MODULE" ${QC_DIR1}/fastqc_data.txt > ${OPT_OUT_DIR}/${NAME_BASE1}_base_quality.txt
     INFO_SEQ_LENGTH1=$(cat ${QC_DIR1}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
     INFO_SEQ_LENGTH1=${INFO_SEQ_LENGTH1##*-}
     MEAN_LENGTH=${INFO_SEQ_LENGTH1}
-    if [ "${SEQ_MODE}" == "Paired End" ]; then
+    if [ "${SEQ_MODE}" == "Paired-End" ]; then
         getblock ">>Per base sequence quality" ">>END_MODULE" ${QC_DIR2}/fastqc_data.txt > ${OPT_OUT_DIR}/${NAME_BASE2}_base_quality.txt
         INFO_SEQ_LENGTH2=$(cat ${QC_DIR2}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
         INFO_SEQ_LENGTH2=${INFO_SEQ_LENGTH2##*-}
         MEAN_LENGTH=$(((INFO_SEQ_LENGTH1 + INFO_SEQ_LENGTH2)/2))
     fi
-    if [ "${SEQ_MODE}" = "Single End" ]; then
+    if [ "${SEQ_MODE}" = "Single-End" ]; then
         OUT_FQ1_NAME=$(basename $OPT_INPUTFQ1)
-        OUT_FQ1_NAME=${OUT_FQ1_NAME/fastq/qc.fastq}
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
         $Cutadapt -q 20,20 -m $((MEAN_LENGTH/2)) \
                   -o ${OPT_OUT_DIR}/${OUT_FQ1_NAME} ${OPT_INPUTFQ1}
-    elif [ "${SEQ_MODE}" = "Paired End" ]; then
+    elif [ "${SEQ_MODE}" = "Paired-End" ]; then
         OUT_FQ1_NAME=$(basename $OPT_INPUTFQ1)
-        OUT_FQ1_NAME=${OUT_FQ1_NAME/fastq/qc.fastq}
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
         OUT_FQ2_NAME=$(basename $OPT_INPUTFQ2)
-        OUT_FQ2_NAME=${OUT_FQ2_NAME/fastq/qc.fastq}
+        OUT_FQ2_NAME=${OUT_FQ2_NAME%.*}.qc.fastq
         $Cutadapt -q 20,20 -m $((MEAN_LENGTH/2)) \
                   -o ${OPT_OUT_DIR}/${OUT_FQ1_NAME} -p ${OPT_OUT_DIR}/${OUT_FQ2_NAME} \
                   ${OPT_INPUTFQ1} ${OPT_INPUTFQ2}
     fi
 else
-    ln -s ${OPT_INPUTFQ1} ${OPT_OUT_DIR}/${OUT_FQ1_NAME}
-    if [ "${SEQ_MODE}" = "Paired End" ]; then
+    if [ "${SEQ_MODE}" = "Single-End" ]; then
+        OUT_FQ1_NAME=$(basename $OPT_INPUTFQ1)
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
+        ln -s ${OPT_INPUTFQ1} ${OPT_OUT_DIR}/${OUT_FQ1_NAME}
+    else
+        OUT_FQ1_NAME=$(basename $OPT_INPUTFQ1)
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
+        ln -s ${OPT_INPUTFQ1} ${OPT_OUT_DIR}/${OUT_FQ1_NAME}
+        OUT_FQ2_NAME=$(basename $OPT_INPUTFQ2)
+        OUT_FQ2_NAME=${OUT_FQ2_NAME$.*}.qc.fastq
         ln -s ${OPT_INPUTFQ2} ${OPT_OUT_DIR}/${OUT_FQ2_NAME}
     fi
 fi

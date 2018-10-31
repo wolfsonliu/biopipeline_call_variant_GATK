@@ -27,7 +27,7 @@ ANNOVAR_DIR=~/humandb
 ####################
 
 Fastqc=fastqc
-
+Cutadapt=cutadapt
 Bwa=bwa
 
 Samtools=samtools

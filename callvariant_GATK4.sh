@@ -96,7 +96,11 @@ function end_stage {
 # read reference file path
 source $REFERENCEFILE
 
-echo $PATH
+if [ -n ${INPUTFQ1} -a -n ${INPUTFQ2} ]; then
+    SEQ_MODE="Paired-End"
+elif [ -n ${INPUTFQ1} -a -z ${INPUTFQ2} ]; then
+    SEQ_MODE="Single-End"
+fi
 ################################################################################
 
 
@@ -120,14 +124,113 @@ fi
 #     output: html
 ####################
 
+function getblock {
+    awk -v sflag="$1" -v eflag="$2" 'BEGIN {inblock = 0;}
+        $0 ~ eflag {inblock = 0;}
+        inblock > 0 {print $0;}
+        $0 ~ sflag {inblock = 1;}' $3
+}
+
+function qc_judge {
+    fail=0
+    for x in `cut -f 1 $1`; do
+        if [ ${x} == 'FAIL' ]; then
+            fail=$((fail + 1))
+        fi
+    done
+    echo ${fail}
+}
+
+function qc_grep_status {
+    cat $1 | grep "$2" | cut -f 1
+}
+
+
+
 start_stage "FastQC: "${INPUTFQ1}
 $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ1}
 end_stage "FastQC: result in "${OUT_DIR}/log
 
-if [ -n ${INPUTFQ2} ]; then
+if [ "${SEQ_MODE}" = "Paired-End" ]; then
     start_stage "FastQC: "${INPUTFQ2}
     $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ2}
     end_stage "FastQC: result in "${OUT_DIR}/log
+fi
+
+#
+
+NAME_BASE1=$(basename ${INPUTFQ1%.*})_fastqc
+QC_DIR1=${OUT_DIR}/log/${NAME_BASE1}
+unzip ${QC_DIR1}.zip -d ${OUT_DIR}/log
+failnum1=$(qc_judge ${QC_DIR1}/summary.txt)
+if (( failnum1 > 4 )); then
+    echo "FAIL: Too many failures of $OPT_INPUTZIP1"
+    exit 0
+fi
+
+if [ "${SEQ_MODE}" = "Paired-End" ]; then
+    NAME_BASE2=$(basename ${INPUTFQ2%.*})_fastqc
+    QC_DIR2=${OUT_DIR}/log/${NAME_BASE2}
+    unzip ${QC_DIR2}.zip -d ${OUT_DIR}/log
+    failnum2=$(qc_judge ${QC_DIR2}/summary.txt)
+    if (( failnum2 > 4 )); then
+        echo "FAIL: Too many failures of $OPT_INPUTZIP2"
+        exit 0
+    fi
+fi
+
+TRIMED=0
+if [ $(qc_grep_status ${QC_DIR1}/summary.txt "Per base sequence quality") = 'FAIL' ]; then
+    TRIMED=1
+    getblock ">>Per base sequence quality" ">>END_MODULE" ${QC_DIR1}/fastqc_data.txt > ${OUT_DIR}/log/${NAME_BASE1}_base_quality.txt
+    INFO_SEQ_LENGTH1=$(cat ${QC_DIR1}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
+    INFO_SEQ_LENGTH1=${INFO_SEQ_LENGTH1##*-}
+    MEAN_LENGTH=${INFO_SEQ_LENGTH1}
+    if [ "${SEQ_MODE}" == "Paired-End" ]; then
+        getblock ">>Per base sequence quality" ">>END_MODULE" ${QC_DIR2}/fastqc_data.txt > ${OUT_DIR}/log/${NAME_BASE2}_base_quality.txt
+        INFO_SEQ_LENGTH2=$(cat ${QC_DIR2}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
+        INFO_SEQ_LENGTH2=${INFO_SEQ_LENGTH2##*-}
+        MEAN_LENGTH=$(((INFO_SEQ_LENGTH1 + INFO_SEQ_LENGTH2)/2))
+    fi
+    if [ "${SEQ_MODE}" = "Single-End" ]; then
+        OUT_FQ1_NAME=$(basename $INPUTFQ1)
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
+        $Cutadapt -q 20,20 -m $((MEAN_LENGTH/2)) \
+                  -o ${OUT_DIR}/bam/${OUT_FQ1_NAME} ${INPUTFQ1}
+        OLD_INPUTFQ1=${INPUTFQ1}
+        INPUTFQ1=${OUT_DIR}/bam/${OUT_FQ1_NAME}
+        $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ1}
+    elif [ "${SEQ_MODE}" = "Paired-End" ]; then
+        OUT_FQ1_NAME=$(basename $INPUTFQ1)
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
+        OUT_FQ2_NAME=$(basename $INPUTFQ2)
+        OUT_FQ2_NAME=${OUT_FQ2_NAME%.*}.qc.fastq
+        $Cutadapt -q 20,20 -m $((MEAN_LENGTH/2)) \
+                  -o ${OUT_DIR}/bam/${OUT_FQ1_NAME} -p ${OUT_DIR}/bam/${OUT_FQ2_NAME} \
+                  ${INPUTFQ1} ${INPUTFQ2}
+        OLD_INPUTFQ1=${INPUTFQ1}
+        OLD_INPUTFQ2=${INPUTFQ2}
+        INPUTFQ1=${OUT_DIR}/bam/${OUT_FQ1_NAME}
+        INPUTFQ2=${OUT_DIR}/bam/${OUT_FQ2_NAME}
+        $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ2}
+        $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ2}
+    fi
+else
+    if [ "${SEQ_MODE}" = "Single-End" ]; then
+        OUT_FQ1_NAME=$(basename $INPUTFQ1)
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
+        ln -s ${INPUTFQ1} ${OUT_DIR}/bam/${OUT_FQ1_NAME}
+        INPUTFQ1=${OUT_DIR}/bam/${OUT_FQ1_NAME}
+    else
+        OUT_FQ1_NAME=$(basename $INPUTFQ1)
+        OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
+        OUT_FQ2_NAME=$(basename $INPUTFQ2)
+        OUT_FQ2_NAME=${OUT_FQ2_NAME%.*}.qc.fastq
+        ln -s ${INPUTFQ1} ${OUT_DIR}/bam/${OUT_FQ1_NAME}
+        ln -s ${INPUTFQ2} ${OUT_DIR}/bam/${OUT_FQ2_NAME}
+        INPUTFQ1=${OUT_DIR}/bam/${OUT_FQ1_NAME}
+        INPUTFQ2=${OUT_DIR}/bam/${OUT_FQ2_NAME}
+    fi
 fi
 
 
@@ -138,12 +241,12 @@ fi
 #     output: sorted.bam
 ####################
 
-if [ -n ${INPUTFQ1} -a -n ${INPUTFQ2} ]; then
+if [ "${SEQ_MODE}" = "Paired-End" ]; then
     start_stage Start  "bwa: ${INPUTFQ1} ${INPUTFQ2}"
     $Bwa mem -M ${BWA_INDEX_DIR}/genome.fa ${INPUTFQ1} ${INPUTFQ2} 2> ${OUT_DIR}/log/bwa.log | \
         samtools view -bS - | \
         samtools sort -@ ${PARR} - -o ${OUT_DIR}/bam/${OUTLABEL}.bam
-elif [ -n ${INPUTFQ1} -a -z ${INPUTFQ2} ]; then
+elif [ "${SEQ_MODE}" = "Single-End" ]; then
     start_stage "bwa: ${INPUTFQ1}"
     $Bwa mem -M ${BWA_INDEX_DIR}/genome.fa ${INPUTFQ1} 2> ${OUT_DIR}/log/bwa.log | \
         samtools view -bS - | \
