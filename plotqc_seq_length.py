@@ -36,9 +36,10 @@ data.loc[:,'LL'] = data['Length'].astype('str')\
                                  .map(lambda x: x[0])\
                                  .astype(int)
 if data.shape[0] != 1:
-    `width = (data['LL'][1:].values - data['LL'][:-1].values).mean()
+    width = (data['LL'][1:].values - data['LL'][:-1].values).mean()
 else:
-    width = data['LL'].mean()
+    width = data['LL'].mean() / 5
+    data.loc[1] = [0, 0, 0]
 
 ####################
 

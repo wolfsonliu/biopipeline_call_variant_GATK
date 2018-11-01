@@ -108,6 +108,9 @@ if [ ! -e ${OUT_DIR}/log ]; then
     mkdir -p ${OUT_DIR}/log
 fi
 
+if [ ! -e ${OUT_DIR}/report ]; then
+    mkdir -p ${OUT_DIR}/report
+fi
 
 if [ ! -e ${OUT_DIR}/bam ]; then
     mkdir -p ${OUT_DIR}/bam
@@ -160,35 +163,35 @@ fi
 #
 
 NAME_BASE1=$(basename ${INPUTFQ1%.*})_fastqc
-QC_DIR1=${OUT_DIR}/log/${NAME_BASE1}
-unzip ${QC_DIR1}.zip -d ${OUT_DIR}/log
-failnum1=$(qc_judge ${QC_DIR1}/summary.txt)
+QC1_DIR1=${OUT_DIR}/log/${NAME_BASE1}
+unzip ${QC1_DIR1}.zip -d ${OUT_DIR}/log
+failnum1=$(qc_judge ${QC1_DIR1}/summary.txt)
 if (( failnum1 > 4 )); then
-    echo "FAIL: Too many failures of $OPT_INPUTZIP1"
+    echo "FAIL: Too many failures of $INPUTFQ1, QC file in:"${QC1_DIR1}.html
     exit 0
 fi
 
 if [ "${SEQ_MODE}" = "Paired-End" ]; then
     NAME_BASE2=$(basename ${INPUTFQ2%.*})_fastqc
-    QC_DIR2=${OUT_DIR}/log/${NAME_BASE2}
-    unzip ${QC_DIR2}.zip -d ${OUT_DIR}/log
-    failnum2=$(qc_judge ${QC_DIR2}/summary.txt)
+    QC1_DIR2=${OUT_DIR}/log/${NAME_BASE2}
+    unzip ${QC1_DIR2}.zip -d ${OUT_DIR}/log
+    failnum2=$(qc_judge ${QC1_DIR2}/summary.txt)
     if (( failnum2 > 4 )); then
-        echo "FAIL: Too many failures of $OPT_INPUTZIP2"
+        echo "FAIL: Too many failures of $INPUTFQ2, QC file in:"${QC1_DIR2}.html
         exit 0
     fi
 fi
 
 TRIMED=0
-if [ $(qc_grep_status ${QC_DIR1}/summary.txt "Per base sequence quality") = 'FAIL' ]; then
+if [ $(qc_grep_status ${QC1_DIR1}/summary.txt "Per base sequence quality") = 'FAIL' ]; then
     TRIMED=1
-    getblock ">>Per base sequence quality" ">>END_MODULE" ${QC_DIR1}/fastqc_data.txt > ${OUT_DIR}/log/${NAME_BASE1}_base_quality.txt
-    INFO_SEQ_LENGTH1=$(cat ${QC_DIR1}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
+    getblock ">>Per base sequence quality" ">>END_MODULE" ${QC1_DIR1}/fastqc_data.txt > ${OUT_DIR}/log/${NAME_BASE1}_base_quality.txt
+    INFO_SEQ_LENGTH1=$(cat ${QC1_DIR1}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
     INFO_SEQ_LENGTH1=${INFO_SEQ_LENGTH1##*-}
     MEAN_LENGTH=${INFO_SEQ_LENGTH1}
     if [ "${SEQ_MODE}" == "Paired-End" ]; then
-        getblock ">>Per base sequence quality" ">>END_MODULE" ${QC_DIR2}/fastqc_data.txt > ${OUT_DIR}/log/${NAME_BASE2}_base_quality.txt
-        INFO_SEQ_LENGTH2=$(cat ${QC_DIR2}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
+        getblock ">>Per base sequence quality" ">>END_MODULE" ${QC1_DIR2}/fastqc_data.txt > ${OUT_DIR}/log/${NAME_BASE2}_base_quality.txt
+        INFO_SEQ_LENGTH2=$(cat ${QC1_DIR2}/fastqc_data.txt | grep "Sequence length" | cut -f 2)
         INFO_SEQ_LENGTH2=${INFO_SEQ_LENGTH2##*-}
         MEAN_LENGTH=$(((INFO_SEQ_LENGTH1 + INFO_SEQ_LENGTH2)/2))
     fi
@@ -200,6 +203,7 @@ if [ $(qc_grep_status ${QC_DIR1}/summary.txt "Per base sequence quality") = 'FAI
         OLD_INPUTFQ1=${INPUTFQ1}
         INPUTFQ1=${OUT_DIR}/bam/${OUT_FQ1_NAME}
         $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ1}
+        QC2_DIR1=${OUT_DIR}/log/$(basename ${INPUTFQ1%.*})_fastqc
     elif [ "${SEQ_MODE}" = "Paired-End" ]; then
         OUT_FQ1_NAME=$(basename $INPUTFQ1)
         OUT_FQ1_NAME=${OUT_FQ1_NAME%.*}.qc.fastq
@@ -214,6 +218,8 @@ if [ $(qc_grep_status ${QC_DIR1}/summary.txt "Per base sequence quality") = 'FAI
         INPUTFQ2=${OUT_DIR}/bam/${OUT_FQ2_NAME}
         $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ2}
         $Fastqc -o ${OUT_DIR}/log/ -f fastq ${INPUTFQ2}
+        QC2_DIR1=${OUT_DIR}/log/$(basename ${INPUTFQ1%.*})_fastqc
+        QC2_DIR2=${OUT_DIR}/log/$(basename ${INPUTFQ2%.*})_fastqc
     fi
 else
     if [ "${SEQ_MODE}" = "Single-End" ]; then
@@ -384,6 +390,57 @@ $Bcftools stats ${OUT_DIR}/vcf/${OUTLABEL}.filter.vcf > ${OUT_DIR}/log/${OUTLABE
 ####################
 # Generate report
 ####################
+
+$Report_prepare_sam -l ${OUTLABEL} \
+                    -s ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats \
+                    -d ${OUT_DIR}/report
+
+$Report_prepare_vcf -l ${OUTLABEL} \
+                    -t ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats \
+                    -v ${OUT_DIR}/${OUTLABEL}.anno.vcf \
+                    -d ${OUT_DIR}/report
+
+if [ "${SEQ_MODE}" = "Paired-End" ]; then
+    if [ ${TRIMED} = 1 ]; then
+        $Report_prepare_fq -l ${OUTLABEL}_beforeqc \
+                           -p ${OLD_INPUTFQ1} \
+                           -q ${OLD_INPUTFQ2} \
+                           -f ${QC1_DIR1}.zip \
+                           -g ${QC1_DIR2}.zip \
+                           -d ${OUT_DIR}/report
+        $Report_prepare_fq -l ${OUTLABEL} \
+                           -p ${INPUTFQ1} \
+                           -q ${INPUTFQ2} \
+                           -f ${QC2_DIR1}.zip \
+                           -g ${QC2_DIR2}.zip \
+                           -d ${OUT_DIR}/report
+    else
+        $Report_prepare_fq -l ${OUTLABEL} \
+                           -p ${INPUTFQ1} \
+                           -q ${INPUTFQ2} \
+                           -f ${QC1_DIR1}.zip \
+                           -g ${QC1_DIR2}.zip \
+                           -d ${OUT_DIR}/report
+    fi
+else
+    if [ ${TRIMED} = 1 ]; then
+        $Report_prepare_fq -l ${OUTLABEL}_beforeqc \
+                           -p ${OLD_INPUTFQ1} \
+                           -f ${QC1_DIR1}.zip \
+                           -d ${OUT_DIR}/report
+        $Report_prepare_fq -l ${OUTLABEL} \
+                           -p ${INPUTFQ1} \
+                           -f ${QC2_DIR1}.zip \
+                           -d ${OUT_DIR}/report
+    else
+        $Report_prepare_fq -l ${OUTLABEL} \
+                           -p ${INPUTFQ1} \
+                           -f ${QC1_DIR1}.zip \
+                           -d ${OUT_DIR}/report
+    fi
+fi
+
+
 
 
 # $Makereport -l ${OUTLABEL} -r ${pipelinedir}/gatk4.pdf \

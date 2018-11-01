@@ -46,7 +46,7 @@ data.loc[:,'vtype'] = data[['REF', 'ALT']].apply(lambda x : x['REF'] + '->' + x[
 annoinfo = data[['CHROM', 'POS', 'ID', 'REF', 'ALT', 'issnp']].copy()
 annoinfo.loc[:,'refGene'] = data['INFOdict'].map(lambda x: x['Gene.refGene']).copy() != '.'
 annoinfo.loc[:,'ExAC'] = data['INFOdict'].map(lambda x: x['ExAC_ALL']).copy() != '.'
-annoinfo.loc[:,'ClinVar'] = data['INFOdict'].map(lambda x: x['CLNDBN']).copy() != '.'
+annoinfo.loc[:,'ClinVar'] = data['INFOdict'].map(lambda x: x['CLNDN']).copy() != '.'
 
 annostat = annoinfo.groupby(
     ['issnp', 'refGene', 'ExAC', 'ClinVar']

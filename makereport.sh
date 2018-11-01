@@ -18,7 +18,7 @@
 #         v: annotated vcf file path
 #         d: output directory path
 ####################
-set -eu
+set -e
 
 function usage {
     echo "Usage: $0 -l label -r pipeline.png -p input1.fastq -q input2.fastq -f input1.qc.zip -g input2.qc.zip -s samtools_stats.txt -t bcftools_stats.txt -v anno.vcf -d outdir" 1>&2
@@ -43,7 +43,7 @@ function helpinfo {
 
 }
 
-while getopts "hl:r:p:q:f:g:s:v:b:d:" opt; do
+while getopts "hl:r:p:q:f:g:s:t:v:b:d:" opt; do
     case ${opt} in
         h)
             helpinfo
@@ -155,7 +155,7 @@ function fq_seq_gc_mean {
 function fq_seq_gc_stat {
     awk 'BEGIN {}
         FNR %4 == 2 {
-v            seq = $0;
+            seq = $0;
             gc[FNR] = gsub(/[GCgc]/, "", seq) / length($0);
         }
         END {
@@ -195,19 +195,19 @@ if [ ! -e ${OUT_DIR}/fig ]; then
 fi
 
 # test the mode: paired end or single end
-if [ -n ${OPT_INPUTFQ1} -a -n ${OPT_INPUTFQ2} ]; then
-    SEQ_MODE="Paired End"
-elif [ -n ${OPT_INPUTFQ1} -a -z ${OPT_INPUTFQ2} ]; then
-    SEQ_MODE="Single End"
+SEQ_MODE="Single-End"
+if [ -n "${OPT_INPUTFQ2}" ]; then
+    SEQ_MODE="Paired-End"
 fi
 
 
 info_stage "Unzip FastQC zip file"
 unzip ${OPT_QCFILE1} -d ${OUT_DIR}
 QCDIR1=${OUT_DIR}/$(basename ${OPT_QCFILE1%[.]zip})
-if [ -n ${OPT_QCFILE2} ]; then
+echo ${SEQ_MODE}
+if [ "${SEQ_MODE}" = "Paired-End" ]; then
     info_stage "Unzip Paired FastQC zip file"
-    unzip ${OPT_QCFILE2} -d ${OUT_DIR}
+    echo unzip ${OPT_QCFILE2} -d ${OUT_DIR}
     QCDIR2=${OUT_DIR}/$(basename ${OPT_QCFILE2%[.]zip})
 fi
 
@@ -218,28 +218,28 @@ cp ${OPT_FIGPIPELINE} ${OUT_DIR}/fig/$(basename ${OPT_FIGPIPELINE})
 
 info_stage "Fetch FastQC data to output directory"
 # get data
-getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_base_quality.txt
-getblock ">>Per sequence quality scores" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_quality_distribution.txt
-getblock ">>Per base sequence content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_base_content.txt
-getblock ">>Per sequence GC content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_gc.txt
-getblock ">>Per base N content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_base_n.txt
-getblock ">>Sequence Length Distribution" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_length_distribution.txt
-getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_duplication.txt
-getblock ">>Overrepresented sequences" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_seq_overrepresented.txt
-getblock ">>Adapter Content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc1_adapter.txt
+getblock ">>Per base sequence quality" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_base_quality.txt
+getblock ">>Per sequence quality scores" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_seq_quality_distribution.txt
+getblock ">>Per base sequence content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_base_content.txt
+getblock ">>Per sequence GC content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_seq_gc.txt
+getblock ">>Per base N content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_base_n.txt
+getblock ">>Sequence Length Distribution" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_seq_length_distribution.txt
+getblock ">>Sequence Duplication Levels" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_seq_duplication.txt
+getblock ">>Overrepresented sequences" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_seq_overrepresented.txt
+getblock ">>Adapter Content" ">>END_MODULE" ${QCDIR1}/fastqc_data.txt > ${OUT_DIR}/qc_adapter.txt
 
 info_stage "Generate QC figures to output directory"
 # generate figures
-plotqc_seq_length.py --input ${OUT_DIR}/qc1_seq_length_distribution.txt \
-                     --output ${OUT_DIR}/fig/qc1_seq_length_distribution.pdf
-plotqc_base_quality.py --input ${OUT_DIR}/qc1_base_quality.txt \
-                       --output ${OUT_DIR}/fig/qc1_base_quality_boxplot.pdf
-plotqc_seq_quality.py --input ${OUT_DIR}/qc1_seq_quality_distribution.txt \
-                      --output ${OUT_DIR}/fig/qc1_seq_quality_distribution.pdf
-plotqc_base_content.py --input ${OUT_DIR}/qc1_base_content.txt \
-                       --output ${OUT_DIR}/fig/qc1_base_content.pdf
-plotqc_seq_gc.py --input ${OUT_DIR}/qc1_seq_gc.txt \
-                 --output ${OUT_DIR}/fig/qc1_seq_gc.pdf
+plotqc_seq_length.py --input ${OUT_DIR}/qc_seq_length_distribution.txt \
+                     --output ${OUT_DIR}/fig/qc_seq_length_distribution.pdf
+plotqc_base_quality.py --input ${OUT_DIR}/qc_base_quality.txt \
+                       --output ${OUT_DIR}/fig/qc_base_quality_boxplot.pdf
+plotqc_seq_quality.py --input ${OUT_DIR}/qc_seq_quality_distribution.txt \
+                      --output ${OUT_DIR}/fig/qc_seq_quality_distribution.pdf
+plotqc_base_content.py --input ${OUT_DIR}/qc_base_content.txt \
+                       --output ${OUT_DIR}/fig/qc_base_content.pdf
+plotqc_seq_gc.py --input ${OUT_DIR}/qc_seq_gc.txt \
+                 --output ${OUT_DIR}/fig/qc_seq_gc.pdf
 
 
 if [ ${SEQ_MODE} = "Paired End" ]; then
@@ -276,22 +276,22 @@ echo $(basename ${OPT_INPUTFQ1}) "base_quality:" $(grep ">>Per base sequence qua
 echo $(basename ${OPT_INPUTFQ1}) "seq_quality:" $(grep ">>Per sequence quality scores" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
 echo $(basename ${OPT_INPUTFQ1}) "base_content:" $(grep ">>Per base sequence content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
 echo $(basename ${OPT_INPUTFQ1}) "seq_gc:" $(grep ">>Per sequence GC content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo $(basename ${OPT_INPUTFQ1}) "base_n:" $(grep ">>Per base N content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+#echo $(basename ${OPT_INPUTFQ1}) "base_n:" $(grep ">>Per base N content" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
 echo $(basename ${OPT_INPUTFQ1}) "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo $(basename ${OPT_INPUTFQ1}) "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo $(basename ${OPT_INPUTFQ1}) "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-echo $(basename ${OPT_INPUTFQ1}) "adapter:" $(grep ">>Adapter Content" ${QCDIR1}/fastqc_data.txt | cut -f2)
+#echo $(basename ${OPT_INPUTFQ1}) "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+#echo $(basename ${OPT_INPUTFQ1}) "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR1}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+#echo $(basename ${OPT_INPUTFQ1}) "adapter:" $(grep ">>Adapter Content" ${QCDIR1}/fastqc_data.txt | cut -f2)
 
 if [ ${SEQ_MODE} = "Paired End" ]; then
     echo $(basename ${OPT_INPUTFQ2}) "base_quality:" $(grep ">>Per base sequence quality" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
     echo $(basename ${OPT_INPUTFQ2}) "seq_quality:" $(grep ">>Per sequence quality scores" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
     echo $(basename ${OPT_INPUTFQ2}) "base_content:" $(grep ">>Per base sequence content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
     echo $(basename ${OPT_INPUTFQ2}) "seq_gc:" $(grep ">>Per sequence GC content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-    echo $(basename ${OPT_INPUTFQ2}) "base_n:" $(grep ">>Per base N content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    #echo $(basename ${OPT_INPUTFQ2}) "base_n:" $(grep ">>Per base N content" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
     echo $(basename ${OPT_INPUTFQ2}) "seq_length_distribution:" $(grep ">>Sequence Length Distribution" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-    echo $(basename ${OPT_INPUTFQ2}) "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-    echo $(basename ${OPT_INPUTFQ2}) "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
-    echo $(basename ${OPT_INPUTFQ2}) "adapter:" $(grep ">>Adapter Content" ${QCDIR2}/fastqc_data.txt | cut -f2)
+    #echo $(basename ${OPT_INPUTFQ2}) "seq_duplication:" $(grep ">>Sequence Duplication Levels" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    #echo $(basename ${OPT_INPUTFQ2}) "seq_overrepresented:" $(grep ">>Overrepresented sequences" ${QCDIR2}/fastqc_data.txt | cut -f2) | tee -a ${OUT_DIR}/stats.txt
+    #echo $(basename ${OPT_INPUTFQ2}) "adapter:" $(grep ">>Adapter Content" ${QCDIR2}/fastqc_data.txt | cut -f2)
 fi
 
 ####################
@@ -323,7 +323,7 @@ cat ${OPT_SSTATFILE} | grep ^COV | cut -f 2- >> ${OUT_DIR}/sam_coverage_distribu
 
 ####################
 
-echo "[$(date) ] Fetch VCF statistics data to output directory"
+echo "[$(date)] Fetch VCF statistics data to output directory"
 # get vcfstas
 echo -e "id\tkey\tvalue" > ${OUT_DIR}/vcf_summary_number.txt
 cat ${OPT_VSTATFILE} | grep ^SN | cut -f 2- >> ${OUT_DIR}/vcf_summary_number.txt
@@ -408,9 +408,11 @@ reporter.py --output ${OUT_DIR}/report.tex \
        --sum-variants-number ${MKRP_TOTAL_VARIANT} \
        --sum-snp-number ${MKRP_SNP} \
        --sum-indel-number ${MKRP_INDEL} \
-       --qc-seq-mode ${SEQ_MODE} \
-       --qc-total-seq ${MKRP_TOTAL_SEQ} \
-       --qc-total-pair 0 \
+       --seq-mode "${SEQ_MODE}" \
+       --total-seq ${MKRP_TOTAL_SEQ} \
+       --total-pair 0 \
+       --qc-warn $(grep warn ${OUT_DIR}/stats.txt | cut -d " " -f 2 | tr -d ":") \
+       --qc-fail $(grep fail ${OUT_DIR}/stats.txt | cut -d " " -f 2 | tr -d ":") \
        --qc-seq-length-mean ${MKRP_SEQ_LENGTH_MEAN} \
        --qc-seq-length-min ${MKRP_SEQ_LENGTH_MIN} \
        --qc-seq-length-median ${MKRP_SEQ_LENGTH_MEDIAN} \

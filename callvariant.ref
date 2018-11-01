@@ -1,5 +1,6 @@
 PIPELINE_DIR:~/CALLVARIANT_GATK4
 PATH=${PIPELINE_DIR}:$PATH
+export ${PATH}
 
 # reference
 # the absolute path for bwa index directory
@@ -42,4 +43,5 @@ Annotate_variation=annotate_variation.pl
 Table_annovar=table_annovar.pl
 
 Makereport="bash ${PIPELINE_DIR}/makereport.sh"
+Report_prepare_fq="bash ${PIPELINE_DIR}/report_prepare_fq.sh"
 ################################################################################
