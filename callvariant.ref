@@ -42,6 +42,6 @@ Annotate_variation=annotate_variation.pl
 
 Table_annovar=table_annovar.pl
 
-Makereport="bash ${PIPELINE_DIR}/makereport.sh"
+Makereport="python3 ${PIPELINE_DIR}/makereport"
 Report_prepare_fq="bash ${PIPELINE_DIR}/report_prepare_fq.sh"
 ################################################################################

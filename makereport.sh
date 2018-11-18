@@ -439,6 +439,7 @@ reporter.py --output ${OUT_DIR}/report.tex \
        --vc-total-variant ${MKRP_TOTAL_VARIANT} \
        --vc-snv-number ${MKRP_SNP} \
        --vc-indel-number ${MKRP_INDEL} \
+       --vcf ${OPT_INPUTVCF} \
        --figpath "${OUT_DIR}/fig/" \
        --fig-pipeline $(basename ${OPT_FIGPIPELINE}) \
        --fig-qc-seq-length-distribution "qc_seq_length_distribution.pdf" \

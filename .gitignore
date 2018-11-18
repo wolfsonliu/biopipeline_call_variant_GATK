@@ -1,2 +1,4 @@
 *~
 temp
+*.zip
+__pycache__

@@ -442,15 +442,20 @@ fi
 
 
 
+$Makereport --label ${OUTLABEL} \
+          --report-title "${OUTLABEL} Variant Analysis Report" \
+          --report-author "MS Health Care" \
+          --fig-pipeline ${pipelinedir}/gatk4.pdf  \
+          --qczip1 ${OUT_DIR}/log/$(basename ${INPUTFQ%[.]*})_fastqc.zip \
+          --samstat ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats \
+          --bcfstat ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats \
+          --vcf ${OUT_DIR}/${OUTLABEL}.anno.vcf \
+          --output-directory ${OUT_DIR}/report --ref-genome "GRCh38"
 
-# $Makereport -l ${OUTLABEL} -r ${pipelinedir}/gatk4.pdf \
-#      -f ${OUT_DIR}/log/$(basename ${INPUTFQ%[.]*})_fastqc.zip \
-#      -s ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats \
-#      -v ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats \
-#      -p ${INPUTFQ1} -q ${INPUTFQ2} -b ${OUT_DIR}/${OUTLABEL}.anno.vcf \
-#      -d ${OUT_DIR}/report
+xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
+xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
 
-# cp ${OUT_DIR}/report/report.pdf ${OUT_DIR}/${OUTLABEL}_report_$(date -I"date").pdf
+cp ${OUT_DIR}/report/report.pdf ${OUT_DIR}/${OUTLABEL}_report_$(date -I"date").pdf
 
 echo "All finished, results in: " ${OUT_DIR}
 #####################
