@@ -71,9 +71,10 @@ parser.add_argument(
 parser.add_argument('--ref-genome', nargs='?', default='GRCh38')
 
 argdict = vars(parser.parse_args())
-argdict['label'] = argdict['label'].replace('_', '\_')
-argdict['report_title'] = argdict['report_title'].replace('_', '\_')
-argdict['report_author'] = argdict['report_author'].replace('_', '\_')
+argdict['label'] = argdict['label'].replace('_', '\\_')
+argdict['report_title'] = argdict['report_title'].replace('_', '\\_')
+argdict['report_author'] = argdict['report_author'].replace('_', '\\_')
+argdict['ref_genome'] = argdict['ref_genome'].replace('_', '\\_')
 argdict['paired'] = False
 
 # paired end
@@ -264,15 +265,15 @@ clnvcf['CLNSIG'] = clnvcf['INFOdict'].map(lambda x: x['CLNSIG'].replace('_', ' '
 # make texvariable
 
 texvariable = {
-    'report_title': argdict['report_title'].replace('_', '\_'),
-    'report_author': argdict['report_author'].replace('_', '\_'),
+    'report_title': argdict['report_title'],
+    'report_author': argdict['report_author'],
     'sum_total_seq': samstat['summary']['raw total sequences'],
     'sum_mapping_rate': round(
         float(samstat['summary']['reads mapped'])/
         float(samstat['summary']['raw total sequences']),
         2
     ),
-    'sum_refgenome': argdict['ref_genome'].replace('_', '\_'),
+    'sum_refgenome': argdict['ref_genome'],
     'sum_variants_number': vcfstat['summary']['number of records'],
     'sum_snv_number': vcfstat['summary']['number of SNPs'],
     'sum_indel_number': vcfstat['summary']['number of indels'],
@@ -386,15 +387,18 @@ for x in qclabel:
     texblock['qc_warn_message'][x] = [
         ' '.join(
             ['The quality control result for', qczip[x]['name'], 'is:']
-        ).replace('_', '\_')
+        ).replace('_', '\\_')
     ]+ tex_warning(
         [a for a,b in qczip[x]['warn'].items() if b == 'warn'],
         [a for a,b in qczip[x]['warn'].items() if b == 'fail']
     )
 
-texblock['clnvcf_table'] = [
-    'The variants annotated with connection to diseases have been list as follows (\\ref{{tab:vcfclinvar}}):'
-] + tex_clnvcf_table(clnvcf)
+if clnvcf.shape[0] > 0:
+    texblock['clnvcf_table'] = [
+        'The variants annotated with connection to diseases have been list as follows (\\ref{{tab:vcfclinvar}}):'
+    ] + tex_clnvcf_table(clnvcf)
+else:
+    texblock['clnvcf_table'] = ['']
 
 for x,y in tex_tex(argdict['paired']).items():
     texblock[x] = y

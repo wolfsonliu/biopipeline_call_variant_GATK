@@ -2,25 +2,40 @@ import os
 import pandas as pd
 
 def tex_clnvcf_table(data):
-    table = [
-        "\\begin{{table}}",
-        "  \\centering",
-        "  \\caption{{Disease associated variants}}",
-        "  \\rowcolors{{1}}{{}}{{rowgray}}",
-        "  \\begin{{tabular}}{{c | r | c | c | p{{0.15\\linewidth}} | p{{0.35\\linewidth}}}}",
-        "    \\hline",
-        "    \\multicolumn{{1}}{{c|}}{{Chrom}} & \\multicolumn{{1}}{{c|}}{{Position}} & \\multicolumn{{1}}{{c|}}{{Reference}} & \\multicolumn{{1}}{{c|}}{{Sample}} & \\multicolumn{{1}}{{c|}}{{Situation}} & \\multicolumn{{1}}{{c}}{{Disease}} \\\\",
-        "    \\hline"
-    ] + list(data.apply(
-        lambda x: ' & '.join(
-            str(i) for i in x[['CHROM', 'POS', 'REF', 'ALT', 'CLNSIG']]
-        ) + ' & ' + ' | '.join(x['CLNDN']) + ' \\\\',
-        axis=1
-    )) + [
-        "  \\label{{tab:vcfclinvar}}",
-        "  \\end{{tabular}}",
-        "\\end{{table}}"
-    ]
+    table = []
+    if data.shape[0] > 0:
+        table = [
+            "\\begin{{center}}",
+            "  \\label{{tab:vcfclinvar}}",
+            "  \\setlength\\LTleft{{0pt}}",
+            "  \\setlength\\LTright{{0pt}}",
+            "  \\begin{{longtable}}{{c  r  p{{2cm}}  p{{2cm}}  p{{3cm}}}}",
+            "    \\caption{{Disease associated variants}}",
+            "    \\hline",
+            "    \\multicolumn{{1}}{{c}}{{Chrom}} & \\multicolumn{{1}}{{c}}{{Position}} & \\multicolumn{{1}}{{c}}{{Reference}} & \\multicolumn{{1}}{{c}}{{Sample}} & \\multicolumn{{1}}{{c}}{{Situation}} \\\\",
+            "    \\hline",
+            "    \\endfirsthead",
+            "    \\hline",
+            "    \\multicolumn{{1}}{{c}}{{Chrom}} & \\multicolumn{{1}}{{c}}{{Position}} & \\multicolumn{{1}}{{c}}{{Reference}} & \\multicolumn{{1}}{{c}}{{Sample}} & \\multicolumn{{1}}{{c}}{{Situation}} \\\\",
+            "    \\hline",
+            "    \\endhead",
+            "    \\hline",
+            "    \\endfirstfoot",
+            "    \\hline",
+            "    \\multicolumn{{5}}{{l}}{{continued on next page}}",
+            "    \\endfoot",
+            "    \\hline",
+            "    \\endlastfoot"
+        ] + list(data.apply(
+            lambda x: '\\hline ' + ' & '.join(
+                str(i) for i in x[['CHROM', 'POS', 'REF', 'ALT', 'CLNSIG']]
+            ) + '\\\\' +
+            'Disease & \\multicolumn{{4}}{{p{{12cm}}}}{{' + ' | '.join(x['CLNDN']) + '}} \\\\',
+            axis=1
+        )) + [
+            "  \\end{{longtable}}",
+            "\\end{{center}}"
+        ]
     return table
 
 
@@ -32,6 +47,8 @@ def tex_warning(warnlist, faillist):
         'seq_gc': 'Sequence GC Content',
         'seq_length_distribution': 'Sequence Length Distribution'
     }
+    warnlist = [x for x in warnlist if x in warnname.keys()]
+    faillist = [x for x in faillist if x in warnname.keys()]
     qc_message_warn = {
         'base_quality': 'Any base is less than 10, or any median is less than 25. That maight be the drop of quality at the nd of the sequences. A quality trimming might be performed.',
         'seq_quality': 'If the mode sequence mean quality is below 27. A quality trimming might be performed.',
@@ -80,6 +97,7 @@ doclist['dochead'] = [
     "\\graphicspath{{{{{figpath}}}}}",
     "\\usepackage[square,numbers]{{natbib}}",
     "\\usepackage[colorlinks=false,bookmarks=true,pdfpagemode=FullScreen]{{hyperref}}",
+    "\\usepackage{{longtable}}",
     "\\title{{{report_title}}}",
     "\\author{{{report_author}}}",
     "\\date{{\\today}}",

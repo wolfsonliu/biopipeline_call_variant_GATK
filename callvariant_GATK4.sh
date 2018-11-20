@@ -443,17 +443,17 @@ fi
 
 
 $Makereport --label ${OUTLABEL} \
-          --report-title "${OUTLABEL} Variant Analysis Report" \
-          --report-author "MS Health Care" \
-          --fig-pipeline ${pipelinedir}/gatk4.pdf  \
-          --qczip1 ${OUT_DIR}/log/$(basename ${INPUTFQ%[.]*})_fastqc.zip \
-          --samstat ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats \
-          --bcfstat ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats \
-          --vcf ${OUT_DIR}/${OUTLABEL}.anno.vcf \
-          --output-directory ${OUT_DIR}/report --ref-genome "GRCh38"
+            --report-title "${OUTLABEL} Variant Analysis Report" \
+            --report-author "MS Health Care" \
+            --fig-pipeline ${pipelinedir}/gatk4.pdf  \
+            --qczip1 ${OUT_DIR}/log/$(basename ${INPUTFQ%[.]*})_fastqc.zip \
+            --samstat ${OUT_DIR}/log/${OUTLABEL}.sorted.markdup.bam.stats \
+            --bcfstat ${OUT_DIR}/log/${OUTLABEL}.filter.vcf.stats \
+            --vcf ${OUT_DIR}/${OUTLABEL}.anno.vcf \
+            --output-directory ${OUT_DIR}/report --ref-genome "GRCh38"
 
-xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
-xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR} ${OUT_DIR}/report.tex
+xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR}/report ${OUT_DIR}/report/report.tex
+xelatex -8bit -interaction=nonstopmode -output-directory=${OUT_DIR}/report ${OUT_DIR}/report/report.tex
 
 cp ${OUT_DIR}/report/report.pdf ${OUT_DIR}/${OUTLABEL}_report_$(date -I"date").pdf
 
