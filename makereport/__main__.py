@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import zipfile as zf
 import argparse
-
+from functools import reduce
 ####################
 
 from repfuncs import write_list_to_file
@@ -393,12 +393,80 @@ for x in qclabel:
         [a for a,b in qczip[x]['warn'].items() if b == 'fail']
     )
 
+sigdescription = ['']
 if clnvcf.shape[0] > 0:
+    sigstat = clnvcf['CLNSIG'].value_counts()
+    sigdescription = [
+        '\\begin{{itemize}}',
+        *[
+            '\\item {0}: {1} {2}'.format(
+            x, y, 'variants' if y > 1 else 'variant'
+            ) for x,y in dict(sigstat).items()
+        ],
+        '\\end{{itemize}}'
+    ]
+
+reportvcf = clnvcf.copy()
+if reportvcf.shape[0] > 20:
+    reportvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('provided') == -1]
+    if reportvcf.shape[0] > 20:
+        reportvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('enign') == -1]
+
+# calculate diseases
+disvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('athogenic') > -1]
+disvcf = reportvcf    # used for test
+if disvcf.shape[0] > 0:
+    disease = pd.Series(
+        reduce(
+            lambda x,y: x+y,
+            [
+                x for x in list(disvcf['CLNDN'])
+            ]
+        )
+    ).value_counts()
+    disease = disease.loc[disease.index != 'not provided']
+    disdescription = [
+        '\\begin{{itemize}}',
+        *[ '\\item {0}: supported by {1} {2}'.format(
+            x, y, 'variants' if y > 1 else 'variant'
+        ) for x,y in dict(disease).items()],
+        '\\end{{itemize}}'
+    ]
+
+if reportvcf.shape[0] > 0:
     texblock['clnvcf_table'] = [
-        'The variants annotated with connection to diseases have been list as follows (\\ref{{tab:vcfclinvar}}):'
-    ] + tex_clnvcf_table(clnvcf)
+        'The Clinical significance of variants summarized as follows:',
+        '',
+        *sigdescription,
+        ''
+    ]
+    if disvcf.shape[0] > 0:
+        texblock['clnvcf_table'] = texblock['clnvcf_table'] + [
+            'According to the analysis of the sample provided, ',
+            'the following diseases need consideration:',
+            '',
+            *disdescription,
+            ''
+        ]
+    else:
+        texblock['clnvcf_table'] = texblock['clnvcf_table'] + [
+            'There is no likely pathogenic or pathogenic variants found in the sample.',
+            ''
+        ]
+    texblock['clnvcf_table'] = texblock['clnvcf_table'] + [
+        'The variants annotated with connection to diseases, ',
+        'which need consideration, listed as follows (\\ref{{tab:vcfclinvar}}):'
+    ] + tex_clnvcf_table(reportvcf)
 else:
-    texblock['clnvcf_table'] = ['']
+    if clnvcf.shape[0] > 0:
+        texblock['clnvcf_table'] = [
+            'The Clinical significance of variants listed as follows:',
+            *sigdescription,
+            '',
+            'No known disease-associated variants found in the sample.'
+        ]
+    else:
+        texblock['clnvcf_table'] = []
 
 for x,y in tex_tex(argdict['paired']).items():
     texblock[x] = y

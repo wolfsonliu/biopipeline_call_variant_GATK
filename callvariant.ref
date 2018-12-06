@@ -1,14 +1,14 @@
 PIPELINE_DIR:~/CALLVARIANT_GATK4
 PATH=${PIPELINE_DIR}:$PATH
 export ${PATH}
-
+PIPELINE_FIGURE=${PIPELINE_DIR}/gatk4.pdf
 # reference
 # the absolute path for bwa index directory
 BWA_INDEX_DIR=$home/Documents/Reference/gatk/BWAIndex
 
 # the absolute path for the genome.fa
 # the genome.dict should be in the same directory with genome.fa
-# 
+
 GENOME_FA=~/genome.fa
 
 # GATK recalibration data
@@ -43,5 +43,4 @@ Annotate_variation=annotate_variation.pl
 Table_annovar=table_annovar.pl
 
 Makereport="python3 ${PIPELINE_DIR}/makereport"
-Report_prepare_fq="bash ${PIPELINE_DIR}/report_prepare_fq.sh"
 ################################################################################

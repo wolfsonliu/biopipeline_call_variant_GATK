@@ -620,7 +620,7 @@ clnvcf_table = "\n".join(
         "  \\rowcolors{{1}}{{}}{{rowgray}}",
         "  \\begin{{tabular}}{{c | r | c | c | p{{0.15\\linewidth}} | p{{0.35\\linewidth}}}}",
         "    \\hline",
-        "    \\multicolumn{{1}}{{c|}}{{Chrom}} & \\multicolumn{{1}}{{c|}}{{Position}} & \\multicolumn{{1}}{{c|}}{{Reference}} & \\multicolumn{{1}}{{c|}}{{Sample}} & \\multicolumn{{1}}{{c|}}{{Situation}} & \\multicolumn{{1}}{{c}}{{Disease}} \\\\",
+        "    \\multicolumn{{1}}{{c|}}{{Chrom}} & \\multicolumn{{1}}{{c|}}{{Position}} & \\multicolumn{{1}}{{c|}}{{Reference}} & \\multicolumn{{1}}{{c|}}{{Sample}} & \\multicolumn{{1}}{{c|}}{{Clinical Significance}} & \\multicolumn{{1}}{{c}}{{Disease}} \\\\",
         "    \\hline"
     ] + list(clnvcf.apply(
         lambda x: ' & '.join(
