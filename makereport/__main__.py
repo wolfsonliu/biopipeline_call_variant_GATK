@@ -407,14 +407,17 @@ if clnvcf.shape[0] > 0:
     ]
 
 reportvcf = clnvcf.copy()
-if reportvcf.shape[0] > 20:
+if reportvcf.shape[0] > 100:
     reportvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('provided') == -1]
-    if reportvcf.shape[0] > 20:
+    reportvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('protective') == -1]
+    if reportvcf.shape[0] > 100:
         reportvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('enign') == -1]
 
 # calculate diseases
-disvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('athogenic') > -1]
-disvcf = reportvcf    # used for test
+disvcf = reportvcf.loc[reportvcf['CLNSIG'].str.find('provided') == -1]
+disvcf = disvcf.loc[reportvcf['CLNSIG'].str.find('enign') == -1]
+disvcf = disvcf.loc[reportvcf['CLNSIG'].str.find('protective') == -1]
+# reportvcf    # used for test
 if disvcf.shape[0] > 0:
     disease = pd.Series(
         reduce(
@@ -425,6 +428,7 @@ if disvcf.shape[0] > 0:
         )
     ).value_counts()
     disease = disease.loc[disease.index != 'not provided']
+    disease = disease.loc[disease.index != 'not specified']
     disdescription = [
         '\\begin{{itemize}}',
         *[ '\\item {0}: supported by {1} {2}'.format(

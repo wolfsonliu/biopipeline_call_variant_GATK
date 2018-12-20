@@ -48,7 +48,7 @@ def tex_warning(warnlist, faillist):
     warnlist = [x for x in warnlist if x in warnname.keys()]
     faillist = [x for x in faillist if x in warnname.keys()]
     qc_message_warn = {
-        'base_quality': 'Any base is less than 10, or any median is less than 25. That maight be the drop of quality at the nd of the sequences. A quality trimming might be performed.',
+        'base_quality': 'Any base is less than 10, or any median is less than 25. That maight be the drop of quality at the end of the sequences. A quality trimming might be performed.',
         'seq_quality': 'If the mode sequence mean quality is below 27. A quality trimming might be performed.',
         'base_content': 'Difference between A and T, or G and C is greater than $10\%$. The sequences should be checked.',
         'seq_gc': 'More than $15\%$ reads deviated from normal distribution. There might be contamination.',
@@ -122,7 +122,7 @@ doclist['sec-analysis_pipeline'] = [
     "\\label{{sec:pipeline}}",
     "\\begin{{figure}}[h]",
     "  \\centering",
-    "  \\includegraphics[width=0.75\\linewidth]{{{fig_pipeline}}}",
+    "  \\includegraphics[width=0.7\\linewidth]{{{fig_pipeline}}}",
     "  \\caption{{MS Variant Calling Pipeline}}",
     "  \\label{{fig:pipeline}}",
     "\\end{{figure}}"
