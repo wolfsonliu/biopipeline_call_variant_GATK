@@ -1,9 +1,13 @@
 #! /usr/bin/env python3
+# Functions in this file is used as assistant function for the makereport scripts.
+# The functions solve small problems in the main script of makereport.
 
+# a wrapper function to write data to file. 
 def write_list_to_file(data, filepath):
     with open(filepath, 'w') as f:
         f.write('\n'.join(data))
 
+# used for catching data from FastQC files.
 def get_list_block(seqlist, start, end):
     result = list()
     inblock = False
@@ -17,9 +21,11 @@ def get_list_block(seqlist, start, end):
             result.append(x)
     return result
 
+# get lines starts with
 def get_list_startwith(seqlist, start):
     return [line for line in seqlist if line.find(start) == 0]
 
+# used to get data from samtools stat
 def get_list_cut(seqlist, sep, cols):
     def parse_cols(colstring, maxcol):
         cslist = colstring.split(',')

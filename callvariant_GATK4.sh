@@ -246,6 +246,8 @@ fi
 #     input:  fastq
 #     input:  bowtie2index
 #     output: sorted.bam
+# Description:
+#     mapping fastq data to reference genome
 ####################
 
 if [ "${SEQ_MODE}" = "Paired-End" ]; then
@@ -265,6 +267,8 @@ end_stage "bwa: "${OUT_DIR}/bam/${OUT_LABEL}.bam
 # Read Group: picard
 #    input:  bam
 #    output: sorted.bam
+# Description:
+#    edit the reads information for GATK4 pipeline
 ####################
 
 start_stage "Picard AddOrReplaceReadGroups: "${OUT_DIR}/bam/${OUT_LABEL}.bam
@@ -284,6 +288,8 @@ end_stage "Picard AddOrReplaceReadGroups: "${OUT_DIR}/bam/${OUT_LABEL}.sorted.ba
 #    input:  sorted.bam
 #    output: markdup.sorted.bam
 #    output: markdup.txt
+# Description:
+#    mark posible PCR related duplicates
 ####################
 
 start_stage "Picard MarkDuplicates: "${OUT_DIR}/bam/${OUT_LABEL}.sorted.bam
@@ -296,6 +302,8 @@ end_stage "Picard MarkDuplicates: "${OUT_DIR}/bam/${OUT_LABEL}.sorted.markdup.ba
 # Statistics of bam file: samtools
 #    input:  markdup.sorted.bam
 #    output: markdup.sorted.bam.stats
+# Decription:
+#    statstics of the mapped BAM file, used for reporter
 ####################
 
 $Samtools stats ${OUT_DIR}/bam/${OUT_LABEL}.sorted.markdup.bam > ${OUT_DIR}/log/${OUT_LABEL}.sorted.markdup.bam.stats
@@ -304,6 +312,8 @@ $Samtools stats ${OUT_DIR}/bam/${OUT_LABEL}.sorted.markdup.bam > ${OUT_DIR}/log/
 # Build bai: samtools
 #    input:  markdup.sorted.bam
 #    output: markdup.sorted.bai
+# Description:
+#    index the BAM file
 ####################
 
 $Samtools index -b ${OUT_DIR}/bam/${OUT_LABEL}.sorted.markdup.bam
@@ -313,6 +323,8 @@ $Samtools index -b ${OUT_DIR}/bam/${OUT_LABEL}.sorted.markdup.bam
 #    input:  markdup.sorted.bam
 #    input:  reference fa
 #    output: vcf
+# Description:
+#    call variants with GATK4 HaplotypeCaller
 ####################
 
 start_stage "GATK HaplotypeCaller: "${OUT_DIR}/bam/${OUT_LABEL}.sorted.markdup.bam
@@ -328,6 +340,8 @@ end_stage "GATK HaplotypeCaller: "${OUT_DIR}/vcf/${OUT_LABEL}.g.vcf.gz
 # Convert gvcf to vcf: GATK GenotypeGVCFs
 #    input:  gatk.haplotype.g.vcf
 #    output: vcf
+# Description:
+#    convert the GVCF file to VCF file
 ####################
 
 start_stage "GATK GenotypeGVCFs: "${OUT_DIR}/vcf/${OUT_LABEL}.g.vcf.gz
@@ -341,6 +355,8 @@ end_stage "GATK GenotypeGVCFs: "${OUT_DIR}/vcf/${OUT_LABEL}.vcf.gz
 # Filter: GATK VariantFiltration
 #    input: vcf
 #    ouput: vcf
+# Description:
+#    filter the VCF according to several scores
 ####################
 
 start_stage "GATK VariantFiltration: "${OUT_DIR}/bam/${OUT_LABEL}.vcf.gz
@@ -362,6 +378,8 @@ rm -f ${OUT_DIR}/vcf/${OUT_LABEL}.filter0.vcf.gz.tbi
 #    input:  vcf.gz(.csi)
 #    input:  clinvar.vcf.gz(.csi)
 #    output: output dir vcfs
+# Description:
+#    annotate the VCF file
 ####################
 
 
@@ -382,13 +400,15 @@ echo "[$(date)] Annotated VCF: " ${OUT_DIR}/${OUT_LABEL}.anno.vcf
 # Statistics of bam file: samtools
 #    input:  markdup.sorted.bam
 #    output: markdup.sorted.bam.stats
+# Decription:
+#    statisctis fo the annotated VCF file
 ####################
 
 $Bcftools stats ${OUT_DIR}/vcf/${OUT_LABEL}.filter.vcf > ${OUT_DIR}/log/${OUT_LABEL}.filter.vcf.stats
 
 
 ####################
-# Generate report
+# Generate report with the makereport scripts
 ####################
 if [ "${SEQ_MODE}" = "Paired-End" ]; then
     $Makereport --label ${OUT_LABEL} \

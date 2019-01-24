@@ -355,23 +355,6 @@ for x in qclabel:
     texvariable['fig_qc_seq_gc'+tag] = os.path.basename(
         fignames['qc'][x]['seq_gc']
     )
-    # 'qc2-seq-length-mean',
-    # 'qc2-seq-length-min',
-    # 'qc2-seq-length-median',
-    # 'qc2-seq-length-max',
-    # 'qc2-seq-length-q1',
-    # 'qc2-seq-length-q3',
-    # 'qc2-seq-gc-mean',
-    # 'qc2-seq-gc-min',
-    # 'qc2-seq-gc-median',
-    # 'qc2-seq-gc-max',
-    # 'qc2-seq-gc-q1',
-    # 'qc2-seq-gc-q3',
-    # 'fig-qc2-seq-length-distribution',
-    # 'fig-qc2-base-quality-boxplot',
-    # 'fig-qc2-seq-quality-distribution',
-    # 'fig-qc2-base-content',
-    # 'fig-qc2-seq-gc',
 
 
 ####################

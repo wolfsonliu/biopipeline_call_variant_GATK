@@ -1,6 +1,9 @@
+# LaTeX template wrapper functions
+  
 import os
 import pandas as pd
 
+# wrapper function for ClinVar ralated VCF table in the report
 def tex_clnvcf_table(data):
     table = []
     if data.shape[0] > 0:
@@ -37,6 +40,7 @@ def tex_clnvcf_table(data):
     return table
 
 
+# wrapper function for quality control warnings and failures
 def tex_warning(warnlist, faillist):
     warnname = {
         'base_quality': 'Base Quality',
@@ -85,7 +89,10 @@ def tex_warning(warnlist, faillist):
     return warning_messages + failure_messages
 
 ####################
+# LaTeX template dict
 doclist = dict()
+
+# header part of the report
 doclist['dochead'] = [
     "\\documentclass[10pt,oneside,a4paper]{{article}}",
     "\\usepackage[scale=0.8]{{geometry}}",
@@ -103,7 +110,11 @@ doclist['dochead'] = [
     "\\begin{{document}}",
     "\\maketitle"
 ]
+
+# end part of the report
 doclist['docend'] = ["\\end{{document}}"]
+
+# section 1: summary
 doclist['sec-summary'] = [
     "\\section{{Summary}}",
     "\\label{{sec:summary}}",
@@ -117,6 +128,8 @@ doclist['sec-summary'] = [
     "  \\end{{itemize}}",
     "\\end{{itemize}}"
 ]
+
+# section 2: analysis pipeline
 doclist['sec-analysis_pipeline'] = [
     "\\section{{Analysis Pipeline}}",
     "\\label{{sec:pipeline}}",
@@ -127,10 +140,14 @@ doclist['sec-analysis_pipeline'] = [
     "  \\label{{fig:pipeline}}",
     "\\end{{figure}}"
 ]
+
+# section 3: result: the header part
 doclist['sec-analysis_result-head'] = [
     "\\section{{Analysis Result}}",
     "\\label{{sec:result}}"
 ]
+
+# section 3: result - subsection: quality control: the header part with several conditions 
 doclist['sec-analysis_result-subsec-qc-head-single-notrim'] = [
     "\\subsection{{Quality Control}}",
     "\\label{{subsec:qc}}",
@@ -793,6 +810,7 @@ doclist['sec-analysis_result-subsec-annotation'] = [
     "\\end{{figure}}"
 ]
 
+# function to select pair or single end sequencing report parts
 def tex_tex(is_paired):
     result = dict()
     result['dochead'] = doclist['dochead']
